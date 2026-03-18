@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<!-- IAMNOTLOGINSTRINGPLEASEDONTREMOVE -->
+<html lang="en">
+
+<head>
+    <link rel="icon" type="image/x-icon" id="dynamic-favicon" href="assets/favicon.ico">
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/toastr.min.css">
+    <link rel="stylesheet" href="assets/css/style4.css">
+    <link rel="stylesheet" href="assets/css/font-awesome.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">    
+    <title>lmepisowifi - Login</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/md5.js"></script>
+   <script>
+         $(document).ready(function() {
+            // Use the variable from config.js
+            if (isSlidingTextEnabled) {
+                $("#slidingTextContainer").show(); // Show the sliding text container if enabled
+                $("#slidingText").text(slidingTextContent); // Set the sliding text content
+            } else {
+                $("#slidingTextContainer").hide(); // Hide the sliding text container if disabled
+            }
+        });
+    </script>
+    <style>
+        html {
+            font-size: 16px; /* This is the anchor */
+        }
+
+        .sliding-text-container {
+            position: relative;
+            background-color: red;
+            border: 2px solid darkred;
+            overflow: hidden;
+            height: 50px; /* Adjust height as needed */
+            color: white;
+            display: flex;
+            align-items: center; /* Center text vertically */
+        }
+        .btn-size, #voucherconvertinput {
+             height: 37px; 
+             line-height: 1.5; 
+        }
+        
+        .expirationhide {
+            display: none;
+        }
+        .sliding-text {
+            position: absolute;
+            white-space: nowrap;
+            animation: slide 10s linear infinite;
+            min-width: 100%;
+        }
+        #promoRatesModal table th {
+            background-color: #212429 !important;
+            border-color: #212429 !important;
+            color: #fff !important;
+        }
+        @keyframes slide {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        #resumeBtn:disabled {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+ 
+        #insertBtn:disabled {
+            background-color: #28a746;
+            border-color: #28a746;
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+    </style>
+    <script>
+(function () {
+    const favicon = document.getElementById("dynamic-favicon");
+    const now = new Date();
+
+    const month = now.getMonth() + 1; // 1–12
+    const day = now.getDate();
+
+    let icon = "assets/favicon.ico";
+
+    // Dec 25–30 → Christmas
+    if (month === 12 && day >= 25 && day <= 30) {
+        icon = "assets/christmasfavicon.ico";
+    }
+    // Dec 31 – Jan 1 → New Year
+    else if (
+        (month === 12 && day === 31) ||
+        (month === 1 && day === 1)
+    ) {
+        icon = "assets/newyearfavicon.ico";
+    }
+
+    // Force refresh (prevents browser caching)
+    favicon.href = icon + "?v=" + Date.now();
+})();
+</script>
+</head>
+
+<body id="loginBody">
+    <div class="sliding-text-container" id="slidingTextContainer" style="display: none;">
+        <div id="slidingText" class="sliding-text">
+            <!-- The text will be set by JavaScript -->
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+       
+
+        $(document).ready(function() {
+            if (isSlidingTextEnabled) {
+                $("#slidingTextContainer").show(); // Show the sliding text container if enabled
+            } else {
+                $("#slidingTextContainer").hide(); // Hide the sliding text container if disabled
+            }
+        });
+    </script>
+
+    $(if chap-id)
+    <form name="sendin" action="$(link-login-only)" method="post" style="display:none">
+        <input type="hidden" name="username" />
+        <input type="hidden" name="password" />
+        <input type="hidden" name="dst" value="$(link-orig)" />
+        <input type="hidden" name="popup" value="true" />
+    </form>
+
+    <script>
+        var mac = "$(mac)";
+        var uIp = "$(ip)";
+        var ImOnLogin = "1";
+        var ImOnStatus = "0";
+        var alertVoucher = "0";
+        var loginError = "";
+
+        function doLogin() {
+            var vc = $("#voucherInput").val();
+            if (macAsVoucherCode && vc == "") {
+                var macNoColon = replaceAll(mac, ":");
+                $("#voucherInput").val(macNoColon);
+            }
+            setStorageValue("activeVoucher", vc);
+            var validity = getStorageValue(vc + "validity");
+            var tempValidity = getStorageValue(vc + "tempValidity");
+            if (tempValidity != null) {
+                var currentExpireDate = new Date();
+                if (validity != null) {
+                    currentExpireDate = new Date(parseInt(validity));
+                }
+                var minutes = parseInt(tempValidity);
+                var expireDate = new Date(currentExpireDate.getTime() + minutes * 60000);
+                
+                var currentDate = new Date();
+                if (expireDate.getTime() < currentDate.getTime()) {
+                    removeStorageValue(vc + "validity");
+                    removeStorageValue(vc + "tempValidity");
+                } else {
+                    setStorageValue(vc + "validity", expireDate.getTime() + "");
+                    removeStorageValue(vc + "tempValidity");
+                }
+            }
+            document.sendin.username.value = vc;
+            if (loginOption == 0) {
+                document.sendin.password.value = hexMD5('$(chap-id)' + "" + '$(chap-challenge)');
+            } else {
+                document.sendin.password.value = hexMD5('$(chap-id)' + vc + '$(chap-challenge)');
+            }
+            document.sendin.submit();
+            return false;
+        }
+    </script>
+    
+    $(endif)
+
+    $(if error)
+    <script>
+        loginError = "$(error)";
+    </script>
+    $(endif)
+
+    <center>    
+    <div class="container">
+        <div class="alert button-rnd">
+    <img class="img-fluid" src="assets/MainPic.PNG" style="width: 100%;" />
+</div>
+<!-- Hidden text element with spinner -->
+<div id="preloadSpinner" style="visibility:hidden; position:absolute;">
+  <i class="fa fa-spinner fa-spin"></i> Loading...
+</div>
+            <div style=margin-bottom:10px></div>
+            <div class="header-text alert alert-success button-rnd" style="width: 290px;">Loading... Please wait, or reload the page if it doesn't load.</div>
+            <div class="col-md-12 status">
+                <div id="status">
+                    <img width="40" src="assets/css/font/disco.svg" style="margin-top:-3px;">
+                    <span class="text-danger"> Disconnected</span>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <small style="color:#007bff">IP: </small><small style="color:#007bff" class="u_ip">$(ip)</small><small style="color:#007bff"> | MAC: $(mac)</small>
+            </div>
+            <div class="col-md-12 expirationhide">
+                <div class="info-title" style="color:#007bff">
+                    <small> Expires on: </small>
+                    <small id="expirationTime" style="color:#007bff"></small>
+                </div>
+            </div>
+
+            <div class="col-md-12">
+                <small style="color:#6c757d">
+                    <div id="timesign">REMAINING TIME:</div>
+                </small>
+            </div>
+<div class="col-md-12">
+                <div class="loginRemainTime" style="color:#6c757d;font-family:'Roboto';font-size:150%">
+                    <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem; border-width: 0.17em;">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div style=margin-bottom:10px></div>
+
+            <div class="col-sm-12">
+    <div class="login">
+        $(if trial == 'yes')
+        <div class="row">
+            <div class="col-md-12">
+                <input type="button" class="btn btn-secondary btn-size button-rnd" onclick="window.location.href = '$(link-login-only)?dst=$(link-orig-esc)&username=T-$(mac-esc)';" value="Get Free 30 Minutes Internet">
+            </div>
+        </div>
+        $(endif)
+        
+<div class="row">
+            <div class="col-md-12">
+                <button type="button" style="margin-top: 1px;" id="insertBtn" onclick="insertBtnAction(); return false" class="btn btn-success btn-size button-rnd" data-toggle="modal">
+    <i id="insertLoading" class="fa fa-spinner fa-spin" 
+         style="display:none; font-size:13px; margin-right:-3px; vertical-align:middle;"></i>
+    Insert Coin
+</button>
+            </div>
+        </div>
+        <!-- Resume Time Button -->
+<div class="row">
+    <div class="col-md-12">
+        <button type="button" style="margin-top: 1px; display: none;" id="resumeBtn" onclick="resumeTimeAction(); return false" class="btn btn-danger btn-size button-rnd">
+            <i id="resumeLoading" class="fa fa-spinner fa-spin" style="display:none; font-size:13px; margin-right:-3px; vertical-align:middle;"></i>
+            Resume Time
+        </button>
+    </div>
+</div>
+        <div class="row">
+            <div class="col-md-12">
+                <button type="button" style="margin-top: 1px;" id="promoRateBtn" onclick="promoBtnAction(); return false" class="btn btn-primary btn-size button-rnd" data-toggle="modal" data-target="#popup">Wifi Rates</button>
+            </div>
+        </div>
+<div class="form-group">
+    <div class="btn-block" id="voucherconvert" style="margin-top: 1px;">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" style="border-radius:5px 0 0 5px" id="voucherconvertinput" aria-describedby="voucherHelp" placeholder="Enter Voucher here...">
+            <div class="input-group-append">
+                <button type="button" id="voucherconvertbtn" onclick="vctopup(0x0);" class="btn btn-size btn-primary" style="border-radius:0 5px 5px 0">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+        <div class="form-group">
+            <div class="btn-block" id="entervoucher" style="display: none;">
+                <div class="input-group mb-3">
+                    <input type="voucher" class="form-control" style="border-radius:2px 0 0 2px" id="voucherInput" aria-describedby="voucherHelp" placeholder="Enter Voucher Code here...">
+                    <div class="input-group-append">
+                        <button type="button" id="connectBtn" onclick="return false" class="btn btn-size btn-primary" style="border-radius:0 2px 2px 0">Login</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+        </div>
+    </center>
+
+    <div class="modal fade" id="insertCoinModal" style="z-index: 1500" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="insertCoinModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-body" style="display:inline">
+                    <center>
+                        <h3 class="modal-title" id="insertCoinModalTitle" style="font-family:Roboto;font-weight:500;color:#009de6">Please insert coin</h3>
+                        <div role="timer" style="font-size:110%">Waiting for
+                            <span id="waitTimer">0</span> seconds                            
+                        </div>
+                        <div class=progress style="margin-bottom:2px; margin-top:2px">
+                            <div id=progressDiv class="progress-bar progress-bar-animated" role=progressbar aria-valuenow=100 aria-valuemin=0 aria-valuemax=100 style="width:100%;height:35px"></div>
+                        </div>
+                        <span id="codeGeneratedBlock">
+                            <p style="display:inline">Your code is</p><br>
+                            <div class="conVrec" id="codeGenerated" style="color:#007bff;font-family:'Roboto';font-weight:700;font-size:150%"></div>
+                        </span>
+                        <hr class="prettyline">
+                    </center>
+                    <ul class="list-group">
+                        <li id="totalTimeDiv" class="list-group-item" style="font-size:16px; text-align:left">
+                            <i class="fa fa-clock-o" style="font-size:110%"></i>Time:
+                            <span class="timerec" id="totalTime"></span>
+                        </li>
+                        <li class="list-group-item-last" style="font-size:16px; text-align:left">
+                            <i class="fa fa-money" style="font-size:110%"></i>Total Amount: &#8369;
+                            <span class="coinrec" id="totalCoin">0</span>.00
+                        </li>
+                    </ul>
+                    <div id="VConvert" style="display: none;">
+                        <div class="input-group mb-3" id="convertVoucherBlockDiv" style="margin-top:10px">
+                            <input type="text" class="form-control" id="convertVoucherCode" placeholder="Enter Voucher...">
+                            <div class="input-group-append">
+                                <button type="button" id="convertBtn" class="btn btn-size btn-primary" onclick="convertVoucherAction(); return false">Submit</button>
+                            </div>
+                        </div>
+                    </div>
+                    <center>
+                        <hr class="prettyline">
+                        <button type="button" id="saveVoucherButton" onclick="saveVoucherBtnAction(); return false" class="btn btn-danger" data-dismiss="modal">Done</button>
+                        <button type="button" id="cncl" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+                    </center>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="promoRatesModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">                    
+                <div class="modal-header">
+                    <h4 class="modal-title" id="exampleModalLabel"><span style="font-family:Roboto;font-weight:500;color:#000000">Wifi Rates</span></h4>
+                    <button type="button" class="close" data-dismiss="modal" style="color: #6c757d">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <table id="ratesBody" class="table table-striped table-bordered table-sm"></table>
+                    <div id="totalTime"></div>                            
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer text-center">
+    <div class="container" style="max-width:411px">
+        <hr class="prettyline" style="margin-top: -10px;">
+    </div>
+    <span class="footers">Powered By: <span style="color:#007bff"><a href="https://youtube.com/@lmepisowifi" style="text-decoration:none; color:#007bff;">lmepisowifi</a>, <a href="https://juanfi.juansystems.com/" style="text-decoration:none; color:#007bff;">JuanFi System 4.4</a></span></span>
+</div>
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/toastr.min.js"></script>
+    <script src="assets/js/core.js"></script>
+    <script>
+        var reLogin = getStorageValue('reLogin');
+        var hotspotAddress = "$(server-address)"; 
+        var interfaceName = "$(interface-name)";
+
+        var sessiontime = "$(session-time-left-secs)";
+        var time = sessiontime;
+        if (time <= "0") {
+            removeStorageValue(voucher + "validity");
+        }
+
+    </script>
+
+    <script>
+function resumeTimeAction() {
+    var resumeBtn = $("#resumeBtn");
+    var resumeLoading = $("#resumeLoading");
+    
+    // Disable the button and reduce opacity
+    resumeBtn.prop("disabled", true).css("opacity", "0.60");
+    
+    // Show the loading animation
+    resumeLoading.show();
+    
+    // Show toast notification
+    toastr.success("Resumed Time Successfully!");
+    
+    // Call doLogin
+    doLogin();
+}
+
+        function fetchValidity(retryNo){
+            if(retryNo > 5){
+                fallbackValidity();
+                return;
+            }
+            var macNoColon = replaceAll(mac, ":");
+            $.ajax({
+                type: "GET",
+                url: "/data/"+macNoColon+".txt?query="+new Date().getTime(),
+                success: function(data){
+                    if(data.length > 50){
+                        setTimeout(function(){
+                            fetchValidity(retryNo++);
+                        }, 1000);
+                        return;
+                    }
+                    var macData = data.split("#");
+                    var validityRaw = macData[1];
+                    
+                    var validityTime = null;
+                    if(validityRaw.length > 15){
+                        validityTime = new Date(Date.parse(validityRaw));
+                    }else if(validityRaw.length > 8){
+                        var dt = validityRaw.split(" ");
+                        var yr = new Date().getFullYear();
+                        validityTime = new Date(Date.parse(dt[0]+"/"+yr+" "+dt[1]));
+                    }else if(validityRaw.length == 0){
+                        validityTime = null;
+                    } else{
+                        var curDate = new Date();
+                        var m = curDate.getMonth()+1;
+                        var d = curDate.getDate();
+                        var yr = curDate.getFullYear();
+                        validityTime = new Date(Date.parse(m+"/"+d+"/"+yr+" "+validityRaw));
+                    }
+                    if(validityTime != null){
+                        setStorageValue(voucher + "validity", validityTime.getTime() + "");
+                        $("#expirationTime").html(validityTime.toLocaleString());
+                    }else{
+                        $("#expirationTime").html("No Expiration");
+                    }
+                },
+                error: function(d){
+                    fallbackValidity();
+                }
+            });			
+        }
+
+    // Function to check if the voucher file exists
+function checkVoucherFile(voucherCode) {
+    $.ajax({
+        url: 'data/' + voucherCode + '.txt', 
+        type: 'GET', 
+        dataType: 'text', 
+        success: function(data) {
+            $("#resumeBtn").css("display", "block"); 
+            $(".expirationhide").css("display", "block"); 
+            $(".loginRemainTime").css({
+                "font-weight": "700", // Set font-weight to 700
+                "color": "#39474A"   // Set text color to dark gray #39474A
+            });
+            $(".loginRemainTime").html(getStorageValue(voucher + "remain"));
+            $("#timesign").html("CLICK RESUME TIME BUTTON TO CONTINUE SURFING").css("font-size", "12px");
+           
+$("#status").html(
+    '<span style="color: #39474A;">' +
+        '<i class="fa fa-pause blink" style="color: #39474A;"></i> Time Paused.' +
+    '</span>'
+);
+            
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            $(".loginRemainTime").html("--"); 
+            $(".loginRemainTime").css("font-weight", "400"); 
+        },
+        cache: false // disable caching
+    });
+}
+
+    $(document).ready(function() {
+     if(voucher.startsWith("T-")){
+         $("#insertBtn").attr("style", "display: none");
+         $("#expirationTime").html("n/a");
+     }else{
+         $("#expirationTime").html("");
+         setTimeout(function(){
+             fetchValidity(1);
+         }, 1000);
+     }
+    var voucherCode = $("#voucherInput").val();
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+    history.go(1);
+    };
+    if (reLogin === '1') {
+    doLogin();
+    setStorageValue('reLogin', '0');
+}
+
+    checkVoucherFile(voucherCode);
+    setTimeout(function() {
+        checkVoucherFile(voucherCode);
+    }, 2000);
+});
+
+    populatePromoRates(0x0);
+</script>
+</body>
+</html>
+
