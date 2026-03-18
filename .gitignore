@@ -1,8 +1,1 @@
-# Ignore runtime MAC/session data files but keep the folder
-hotspot/data/*.txt
-hotspot/data/.txt
-
-# Keep the placeholder
-!hotspot/data/.gitkeep
-
-*.auto.rsc
+hotspot/data/
