@@ -28,4 +28,3 @@ assets/js/jquery.min.js
 assets/js/bootstrap.min.js
 assets/js/core.js
 assets/js/config.js
-data/.gitkeep
