@@ -1,3 +1,491 @@
+:foreach sName in={"enabletelegram";"bottoken";"chatid";"enablediscord";"discordwebhook";"todayincome";"monthlyincome";"yearlyincome"} do={
+    :if ([:len [/system script find name=$sName]] = 0) do={
+        /system script add name=$sName source="0" policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon;
+        :log warning "Created missing script: $sName";
+    }
+}
+
+/system scheduler
+
+# --- uptime backup ---
+:if ([/system scheduler find name="uptime backup"] = "") do={
+    /system scheduler add \
+        interval=5m \
+        name="uptime backup" \
+        on-event=":local hsactiveuptime;\
+    \n:local hsuser;\
+    \n\
+    \n:if ([/ip hotspot active print count-only] > 0) do={\
+    \n    :foreach i in=[/ip hotspot active find] do={\
+    \n        :set hsactiveuptime [/ip hotspot active get \$i uptime];\
+    \n        :set hsuser [/ip hotspot active get \$i user];\
+    \n        /system scheduler set [find where name=\$hsuser] comment=\"temp \$hsactiveuptime\";\
+    \n    }\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-time=startup
+} else={
+    /system scheduler set [find name="uptime backup"] \
+        interval=5m \
+        on-event=":local hsactiveuptime;\
+    \n:local hsuser;\
+    \n\
+    \n:if ([/ip hotspot active print count-only] > 0) do={\
+    \n    :foreach i in=[/ip hotspot active find] do={\
+    \n        :set hsactiveuptime [/ip hotspot active get \$i uptime];\
+    \n        :set hsuser [/ip hotspot active get \$i user];\
+    \n        /system scheduler set [find where name=\$hsuser] comment=\"temp \$hsactiveuptime\";\
+    \n    }\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-time=startup
+}
+
+# --- uptime restore ---
+:if ([/system scheduler find name="uptime restore"] = "") do={
+    /system scheduler add \
+        name="uptime restore" \
+        on-event=":local ucom;\
+    \n:local hsolduptime;\
+    \n:local hsnewuptime;\
+    \n:local hsactiveuptime;\
+    \n:local hsuser;\
+    \n:local temp;\
+    \n:foreach ie in=[/sys sch find] do={\
+    \n    :set \$ucom [/sys sch get \$ie comment];\
+    \n    :if (\$ucom != \"\") do={\
+    \n        :set \$temp [:pick \$ucom 0 4];\
+    \n        :if (\$temp = \"temp\") do={\
+    \n            :set \$hsuser [/sys sch get \$ie name];\
+    \n            :if ([/ip hotspot user find name=\$hsuser]) do={\
+    \n                :set \$hsolduptime [/ip hotspot user get [find where name=\$hsuser] limit-uptime];\
+    \n                :set \$hsactiveuptime [:pick \$ucom 5 [:len \$ucom]];\
+    \n                :set \$hsnewuptime (\$hsolduptime - \$hsactiveuptime);\
+    \n                /ip hotspot user set [find where name=\$hsuser] limit-uptime=\$hsnewuptime;\
+    \n                /sys sch set [find where name=\$hsuser] comment=\"\";\
+    \n            } else={\
+    \n                /sys sch remove \$ie;\
+    \n            }\
+    \n        }\
+    \n    }\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-time=startup
+} else={
+    /system scheduler set [find name="uptime restore"] \
+        on-event=":local ucom;\
+    \n:local hsolduptime;\
+    \n:local hsnewuptime;\
+    \n:local hsactiveuptime;\
+    \n:local hsuser;\
+    \n:local temp;\
+    \n:foreach ie in=[/sys sch find] do={\
+    \n    :set \$ucom [/sys sch get \$ie comment];\
+    \n    :if (\$ucom != \"\") do={\
+    \n        :set \$temp [:pick \$ucom 0 4];\
+    \n        :if (\$temp = \"temp\") do={\
+    \n            :set \$hsuser [/sys sch get \$ie name];\
+    \n            :if ([/ip hotspot user find name=\$hsuser]) do={\
+    \n                :set \$hsolduptime [/ip hotspot user get [find where name=\$hsuser] limit-uptime];\
+    \n                :set \$hsactiveuptime [:pick \$ucom 5 [:len \$ucom]];\
+    \n                :set \$hsnewuptime (\$hsolduptime - \$hsactiveuptime);\
+    \n                /ip hotspot user set [find where name=\$hsuser] limit-uptime=\$hsnewuptime;\
+    \n                /sys sch set [find where name=\$hsuser] comment=\"\";\
+    \n            } else={\
+    \n                /sys sch remove \$ie;\
+    \n            }\
+    \n        }\
+    \n    }\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-time=startup
+}
+
+# --- Reset Daily Income ---
+:if ([/system scheduler find name="Reset Daily Income"] = "") do={
+    /system scheduler add \
+        interval=1h \
+        name="Reset Daily Income" \
+        on-event=":local sntpStatus [/system ntp client get last-update-from];\
+    \n:local currentDate [/system clock get date];\
+    \n:local currentday [:pick \$currentDate 4 6];\
+    \n:local iTBotToken [/system script get [find name=\"bottoken\"] source];\
+    \n:local iTGrChatID [/system script get [find name=\"chatid\"] source];\
+    \n:local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
+    \n\
+    \n:local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
+    \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
+    \n\
+    \n:local todayIncomeSource [/system script get [find name=\"todayincome\"] source];\
+    \n\
+    \n:if ([:len \$sntpStatus] > 0) do={\
+    \n    :local schedulerComment [/system scheduler get [find name=\"Reset Daily Income\"] comment];\
+    \n    \
+    \n    :if (\$schedulerComment != \$currentday) do={\
+    \n        :if (\$todayIncomeSource != \"0\") do={\
+    \n            :local message (\"The income today is: \" . \$todayIncomeSource);\
+    \n            :if (\$isTelegram=1) do={\
+    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n            }\
+    \n            :delay 1s;\
+    \n            :if (\$isDiscord=1) do={\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
+    \n            }\
+    \n        }\
+    \n        \
+    \n        /system script set source=\"0\" [find name=\"todayincome\"];\
+    \n        /system scheduler set [find name=\"Reset Daily Income\"] comment=\"\$currentday\";\
+    \n        \
+    \n    } else={\
+    \n        \
+    \n    }\
+    \n} else={\
+    \n    \
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-date=sep/28/2021 \
+        start-time=00:00:01
+} else={
+    /system scheduler set [find name="Reset Daily Income"] \
+        interval=1h \
+        on-event=":local sntpStatus [/system ntp client get last-update-from];\
+    \n:local currentDate [/system clock get date];\
+    \n:local currentday [:pick \$currentDate 4 6];\
+    \n:local iTBotToken [/system script get [find name=\"bottoken\"] source];\
+    \n:local iTGrChatID [/system script get [find name=\"chatid\"] source];\
+    \n:local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
+    \n\
+    \n:local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
+    \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
+    \n\
+    \n:local todayIncomeSource [/system script get [find name=\"todayincome\"] source];\
+    \n\
+    \n:if ([:len \$sntpStatus] > 0) do={\
+    \n    :local schedulerComment [/system scheduler get [find name=\"Reset Daily Income\"] comment];\
+    \n    \
+    \n    :if (\$schedulerComment != \$currentday) do={\
+    \n        :if (\$todayIncomeSource != \"0\") do={\
+    \n            :local message (\"The income today is: \" . \$todayIncomeSource);\
+    \n            :if (\$isTelegram=1) do={\
+    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n            }\
+    \n            :delay 1s;\
+    \n            :if (\$isDiscord=1) do={\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
+    \n            }\
+    \n        }\
+    \n        \
+    \n        /system script set source=\"0\" [find name=\"todayincome\"];\
+    \n        /system scheduler set [find name=\"Reset Daily Income\"] comment=\"\$currentday\";\
+    \n        \
+    \n    } else={\
+    \n        \
+    \n    }\
+    \n} else={\
+    \n    \
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
+}
+
+# --- maxactiveusers ---
+:if ([/system scheduler find name="maxactiveusers"] = "") do={
+    /system scheduler add \
+        interval=15m \
+        name="maxactiveusers" \
+        on-event=":local activeUsers [/ip hotspot active print count-only];\
+    \n\
+    \n# Read stored max from this scheduler's comment\
+    \n:local schedulerEntry [/system scheduler find name=\"maxactiveusers\"];\
+    \n:local currentSource [/system scheduler get \$schedulerEntry comment];\
+    \n:local maxActiveUsers 0;\
+    \n\
+    \n:if ([:len \$currentSource] > 0) do={\
+    \n    :set maxActiveUsers [:tonum \$currentSource];\
+    \n}\
+    \n\
+    \n:if (\$activeUsers > \$maxActiveUsers) do={\
+    \n    /system scheduler set \$schedulerEntry comment=\"\$activeUsers\";\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-time=startup
+} else={
+    /system scheduler set [find name="maxactiveusers"] \
+        interval=15m \
+        on-event=":local activeUsers [/ip hotspot active print count-only];\
+    \n\
+    \n# Read stored max from this scheduler's comment\
+    \n:local schedulerEntry [/system scheduler find name=\"maxactiveusers\"];\
+    \n:local currentSource [/system scheduler get \$schedulerEntry comment];\
+    \n:local maxActiveUsers 0;\
+    \n\
+    \n:if ([:len \$currentSource] > 0) do={\
+    \n    :set maxActiveUsers [:tonum \$currentSource];\
+    \n}\
+    \n\
+    \n:if (\$activeUsers > \$maxActiveUsers) do={\
+    \n    /system scheduler set \$schedulerEntry comment=\"\$activeUsers\";\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-time=startup
+}
+
+# --- reset maxactiveusers ---
+:if ([/system scheduler find name="reset maxactiveusers"] = "") do={
+    /system scheduler add \
+        interval=1h \
+        name="reset maxactiveusers" \
+        on-event=":local sntpStatus [/system ntp client get last-update-from];\
+    \n\
+    \n:if ([:len \$sntpStatus] > 0) do={\
+    \n    :local currentDate [/system clock get date];\
+    \n    :local currentday [:pick \$currentDate 4 6];\
+    \n    :local schedulerComment [/system scheduler get [find name=\"reset maxactiveusers\"] comment];\
+    \n\
+    \n    :if (\$schedulerComment != \$currentday) do={\
+    \n        :local iTBotToken [/system script get [find name=\"bottoken\"] source];\
+    \n        :local iTGrChatID [/system script get [find name=\"chatid\"] source];\
+    \n        :local maxActiveUsersSource [/system script get [find name=\"maxactiveusers\"] source];\
+    \n        :local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
+    \n\
+    \n        :local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
+    \n        :local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
+    \n\
+    \n        :if (\$maxActiveUsersSource != \"0\") do={\
+    \n            :local message (\"The top active users for today is: \" . \$maxActiveUsersSource);\
+    \n            :if (\$isDiscord=1) do={\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
+    \n            }\
+    \n            :if (\$isTelegram=1) do={\
+    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n            }\
+    \n            \
+    \n            :delay 1s;\
+    \n        }\
+    \n\
+    \n        /system script set source=\"0\" [find name=\"maxactiveusers\"];\
+    \n        /system scheduler set [find name=\"reset maxactiveusers\"] comment=\"\$currentday\";\
+    \n    }\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-date=feb/16/2025 \
+        start-time=00:00:01
+} else={
+    /system scheduler set [find name="reset maxactiveusers"] \
+        interval=1h \
+        on-event=":local sntpStatus [/system ntp client get last-update-from];\
+    \n\
+    \n:if ([:len \$sntpStatus] > 0) do={\
+    \n    :local currentDate [/system clock get date];\
+    \n    :local currentday [:pick \$currentDate 4 6];\
+    \n    :local schedulerComment [/system scheduler get [find name=\"reset maxactiveusers\"] comment];\
+    \n\
+    \n    :if (\$schedulerComment != \$currentday) do={\
+    \n        :local iTBotToken [/system script get [find name=\"bottoken\"] source];\
+    \n        :local iTGrChatID [/system script get [find name=\"chatid\"] source];\
+    \n        :local maxActiveUsersSource [/system script get [find name=\"maxactiveusers\"] source];\
+    \n        :local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
+    \n\
+    \n        :local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
+    \n        :local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
+    \n\
+    \n        :if (\$maxActiveUsersSource != \"0\") do={\
+    \n            :local message (\"The top active users for today is: \" . \$maxActiveUsersSource);\
+    \n            :if (\$isDiscord=1) do={\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
+    \n            }\
+    \n            :if (\$isTelegram=1) do={\
+    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n            }\
+    \n            \
+    \n            :delay 1s;\
+    \n        }\
+    \n\
+    \n        /system script set source=\"0\" [find name=\"maxactiveusers\"];\
+    \n        /system scheduler set [find name=\"reset maxactiveusers\"] comment=\"\$currentday\";\
+    \n    }\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
+}
+
+# --- resetmonthly ---
+:if ([/system scheduler find name="resetmonthly"] = "") do={
+    /system scheduler add \
+        interval=1h \
+        name="resetmonthly" \
+        on-event=":local sntpStatus [/system ntp client get last-update-from];\
+    \n:local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
+    \n:local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
+    \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
+    \n\
+    \n:if ([:len \$sntpStatus] > 0) do={\
+    \n    :local currentDate [/system clock get date];\
+    \n    :local currentMonth [:pick \$currentDate 0 3];\
+    \n\
+    \n    :local schedulerEntry [/system scheduler find name=\"resetmonthly\"];\
+    \n    :local storedMonth [/system scheduler get \$schedulerEntry comment];\
+    \n\
+    \n    :if (\$storedMonth != \$currentMonth) do={\
+    \n        /system scheduler set \$schedulerEntry comment=\"\$currentMonth\";\
+    \n\
+    \n        :local iTBotToken [/system script get [find name=\"bottoken\"] source];\
+    \n        :local iTGrChatID [/system script get [find name=\"chatid\"] source];\
+    \n        :local monthlyIncomeSource [/system script get [find name=\"monthlyincome\"] source];\
+    \n\
+    \n        :if (\$monthlyIncomeSource != \"0\") do={\
+    \n            :local message (\"The income for this month is: \" . \$monthlyIncomeSource);\
+    \n            :if (\$isTelegram=1) do={\
+    \n                /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n            }\
+    \n            :if (\$isDiscord=1) do={\
+    \n                /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no;\
+    \n            }\
+    \n            :delay 1s;\
+    \n        }\
+    \n\
+    \n        /system script set source=\"0\" [find name=\"monthlyincome\"];\
+    \n    }\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-date=mar/24/2025 \
+        start-time=00:00:01
+} else={
+    /system scheduler set [find name="resetmonthly"] \
+        interval=1h \
+        on-event=":local sntpStatus [/system ntp client get last-update-from];\
+    \n:local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
+    \n:local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
+    \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
+    \n\
+    \n:if ([:len \$sntpStatus] > 0) do={\
+    \n    :local currentDate [/system clock get date];\
+    \n    :local currentMonth [:pick \$currentDate 0 3];\
+    \n\
+    \n    :local schedulerEntry [/system scheduler find name=\"resetmonthly\"];\
+    \n    :local storedMonth [/system scheduler get \$schedulerEntry comment];\
+    \n\
+    \n    :if (\$storedMonth != \$currentMonth) do={\
+    \n        /system scheduler set \$schedulerEntry comment=\"\$currentMonth\";\
+    \n\
+    \n        :local iTBotToken [/system script get [find name=\"bottoken\"] source];\
+    \n        :local iTGrChatID [/system script get [find name=\"chatid\"] source];\
+    \n        :local monthlyIncomeSource [/system script get [find name=\"monthlyincome\"] source];\
+    \n\
+    \n        :if (\$monthlyIncomeSource != \"0\") do={\
+    \n            :local message (\"The income for this month is: \" . \$monthlyIncomeSource);\
+    \n            :if (\$isTelegram=1) do={\
+    \n                /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n            }\
+    \n            :if (\$isDiscord=1) do={\
+    \n                /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no;\
+    \n            }\
+    \n            :delay 1s;\
+    \n        }\
+    \n\
+    \n        /system script set source=\"0\" [find name=\"monthlyincome\"];\
+    \n    }\
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
+}
+
+# --- autorestart ---
+:if ([/system scheduler find name="autorestart"] = "") do={
+    /system scheduler add \
+        interval=1d \
+        name="autorestart" \
+        on-event="/system reboot" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-date=jun/11/2025 \
+        start-time=03:00:00
+} else={
+    /system scheduler set [find name="autorestart"] \
+        interval=1d \
+        on-event="/system reboot" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
+}
+
+# --- reset yearly ---
+:if ([/system scheduler find name="reset yearly"] = "") do={
+    /system scheduler add \
+        interval=1h \
+        name="reset yearly" \
+        on-event=":local sntpStatus [/system ntp client get last-update-from];\
+    \n:local currentDate [/system clock get date];\
+    \n:local currentyear [:pick \$currentDate 7 11];\
+    \n:local iTBotToken [/system script get [find name=\"bottoken\"] source];\
+    \n:local iTGrChatID [/system script get [find name=\"chatid\"] source];\
+    \n:local yearlyIncomeSource [/system script get [find name=\"yearlyincome\"] source];\
+    \n:local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
+    \n:local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
+    \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
+    \n\
+    \n:if ([:len \$sntpStatus] > 0) do={\
+    \n    :local schedulerComment [/system scheduler get [find name=\"reset yearly\"] comment];\
+    \n    \
+    \n    :if (\$schedulerComment != \$currentyear) do={\
+    \n        :if (\$yearlyIncomeSource != \"0\") do={\
+    \n            :local message (\"The income for this year is: \" . \$yearlyIncomeSource);\
+    \n            :if (\$isTelegram=1) do={\
+    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n            }\
+    \n            :if (\$isDiscord=1) do={\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
+    \n            }\
+    \n            :delay 1s;\
+    \n        }\
+    \n        \
+    \n        /system script set source=\"0\" [find name=\"yearlyincome\"];\
+    \n        /system scheduler set [find name=\"reset yearly\"] comment=\"\$currentyear\";\
+    \n        \
+    \n    } else={\
+    \n        \
+    \n    }\
+    \n} else={\
+    \n    \
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+        start-date=jan/02/1970 \
+        start-time=00:00:01
+} else={
+    /system scheduler set [find name="reset yearly"] \
+        interval=1h \
+        on-event=":local sntpStatus [/system ntp client get last-update-from];\
+    \n:local currentDate [/system clock get date];\
+    \n:local currentyear [:pick \$currentDate 7 11];\
+    \n:local iTBotToken [/system script get [find name=\"bottoken\"] source];\
+    \n:local iTGrChatID [/system script get [find name=\"chatid\"] source];\
+    \n:local yearlyIncomeSource [/system script get [find name=\"yearlyincome\"] source];\
+    \n:local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
+    \n:local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
+    \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
+    \n\
+    \n:if ([:len \$sntpStatus] > 0) do={\
+    \n    :local schedulerComment [/system scheduler get [find name=\"reset yearly\"] comment];\
+    \n    \
+    \n    :if (\$schedulerComment != \$currentyear) do={\
+    \n        :if (\$yearlyIncomeSource != \"0\") do={\
+    \n            :local message (\"The income for this year is: \" . \$yearlyIncomeSource);\
+    \n            :if (\$isTelegram=1) do={\
+    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n            }\
+    \n            :if (\$isDiscord=1) do={\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
+    \n            }\
+    \n            :delay 1s;\
+    \n        }\
+    \n        \
+    \n        /system script set source=\"0\" [find name=\"yearlyincome\"];\
+    \n        /system scheduler set [find name=\"reset yearly\"] comment=\"\$currentyear\";\
+    \n        \
+    \n    } else={\
+    \n        \
+    \n    }\
+    \n} else={\
+    \n    \
+    \n}" \
+        policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
+}
+
+
 /ip hotspot user profile
 set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     autospeedlimit on-login="# Get User Data\
