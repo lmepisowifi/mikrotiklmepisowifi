@@ -5,6 +5,9 @@
     }
 }
 
+/system ntp client
+set enabled=yes primary-ntp=202.90.128.35 secondary-ntp=[:resolve 0.asia.pool.ntp.org]
+
 /system scheduler
 
 # --- uptime backup ---
