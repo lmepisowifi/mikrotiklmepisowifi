@@ -19,12 +19,15 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script src="assets/js/config.js"></script>
+<script>
+    if (typeof isSlidingTextEnabled === 'undefined') isSlidingTextEnabled = false;
+</script>
     <script src="assets/js/md5.js"></script>
    <script>
          $(document).ready(function() {
             // Use the variable from config.js
-            if (isSlidingTextEnabled) {
-                $("#slidingTextContainer").show(); // Show the sliding text container if enabled
+if (typeof isSlidingTextEnabled !== 'undefined' && isSlidingTextEnabled) {
+    $("#slidingTextContainer").show(); // Show the sliding text container if enabled
                 $("#slidingText").text(slidingTextContent); // Set the sliding text content
             } else {
                 $("#slidingTextContainer").hide(); // Hide the sliding text container if disabled
@@ -119,17 +122,6 @@
 
 <body id="loginBody">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-       
-
-        $(document).ready(function() {
-            if (isSlidingTextEnabled) {
-                $("#slidingTextContainer").show(); // Show the sliding text container if enabled
-            } else {
-                $("#slidingTextContainer").hide(); // Hide the sliding text container if disabled
-            }
-        });
-    </script>
 
     $(if chap-id)
     <form name="sendin" action="$(link-login-only)" method="post" style="display:none">
