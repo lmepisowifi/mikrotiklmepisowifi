@@ -118,12 +118,6 @@
 </head>
 
 <body id="loginBody">
-    <div class="sliding-text-container" id="slidingTextContainer" style="display: none;">
-        <div id="slidingText" class="sliding-text">
-            <!-- The text will be set by JavaScript -->
-        </div>
-    </div>
-
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
        
@@ -208,7 +202,9 @@
   <i class="fa fa-spinner fa-spin"></i> Loading...
 </div>
             <div style=margin-bottom:10px></div>
-            <div class="header-text alert alert-success button-rnd" style="width: 290px;">Loading... Please wait, or reload the page if it doesn't load.</div>
+            <div class="header-text alert alert-success button-rnd" id="headerTextDiv" style="width: 290px;">
+    <div id="slidingText"></div>
+</div>
             <div class="col-md-12 status">
                 <div id="status">
                     <img width="40" src="assets/css/font/disco.svg" style="margin-top:-3px;">
@@ -253,7 +249,7 @@
             <div class="col-md-12">
                 <button type="button" style="margin-top: 1px;" id="insertBtn" onclick="insertBtnAction(); return false" class="btn btn-success btn-size button-rnd" data-toggle="modal">
     <i id="insertLoading" class="fa fa-spinner fa-spin" 
-         style="display:none; font-size:13px; margin-right:-3px; vertical-align:middle;"></i>
+         style="display:none; font-size:15px; margin-right:-1px; vertical-align:middle;"></i>
     Insert Coin
 </button>
             </div>
@@ -262,7 +258,7 @@
 <div class="row">
     <div class="col-md-12">
         <button type="button" style="margin-top: 1px; display: none;" id="resumeBtn" onclick="resumeTimeAction(); return false" class="btn btn-danger btn-size button-rnd">
-            <i id="resumeLoading" class="fa fa-spinner fa-spin" style="display:none; font-size:13px; margin-right:-3px; vertical-align:middle;"></i>
+            <i id="resumeLoading" class="fa fa-spinner fa-spin" style="display:none; font-size:15px; margin-right:-1px; vertical-align:middle;"></i>
             Resume Time
         </button>
     </div>
@@ -275,9 +271,9 @@
 <div class="form-group">
     <div class="btn-block" id="voucherconvert" style="margin-top: 1px;">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" style="border-radius:5px 0 0 5px" id="voucherconvertinput" aria-describedby="voucherHelp" placeholder="Enter Voucher here...">
+            <input type="text" class="form-control" style="border-radius:3px 0 0 3px" id="voucherconvertinput" aria-describedby="voucherHelp" placeholder="Enter Voucher here...">
             <div class="input-group-append">
-                <button type="button" id="voucherconvertbtn" onclick="vctopup(0x0);" class="btn btn-size btn-primary" style="border-radius:0 5px 5px 0">Submit</button>
+                <button type="button" id="voucherconvertbtn" onclick="vctopup(0x0);" class="btn btn-size btn-primary" style="border-radius:0 3px 3px 0">Submit</button>
             </div>
         </div>
     </div>
