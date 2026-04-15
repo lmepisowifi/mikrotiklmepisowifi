@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
     <link rel="icon" type="image/x-icon" id="dynamic-favicon" href="assets/favicon.ico">
     <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/toastr.min.css">
@@ -31,12 +32,7 @@
         $(document).ready(function() {
             setStorageValue('reLogin', '0');
             // Use the variable from config.js
-            if (isSlidingTextEnabled) {
-                $("#slidingTextContainer").show(); // Show the sliding text container if enabled
-                $("#slidingText").text(slidingTextContent); // Set the sliding text content
-            } else {
-                $("#slidingTextContainer").hide(); // Hide the sliding text container if disabled
-            }
+
         });
     </script>
     <style>
@@ -125,12 +121,6 @@
 
 <body id="loginBody">
 
-    <div class="sliding-text-container" id="slidingTextContainer" style="display: none;">
-        <div id="slidingText" class="sliding-text">
-            <!-- The text will be set by JavaScript -->
-        </div>
-    </div>
-
     <center>
         <div class="container">		
             <form action="$(link-logout)" name="logout"></form>
@@ -156,7 +146,9 @@
 
 </div>
             <div style=margin-bottom:10px></div>
-            <div class="header-text alert alert-success button-rnd" style="width: 290px;">Loading... Please wait, or reload the page if it doesn't load.</div>
+            <div class="header-text alert alert-success button-rnd" id="headerTextDiv" style="width: 290px;">
+    <div id="slidingText"></div>
+</div>
             <div class="col-md-12 status">
                 <div id="status">
                     <div id="status">
@@ -202,7 +194,7 @@
                         <div class="col-md-12">
                             <button type="button" style="margin-top: 1px;" id="insertBtn" onclick="insertBtnAction(); return false" class="btn btn-success btn-size button-rnd" data-insert-type="extend" data-toggle="modal">
   <span id="insertLoading" style="display: none;">
-  <i class="fa fa-spinner fa-spin" style="font-size:13px; margin-right:-3px; vertical-align:middle;"></i>
+  <i class="fa fa-spinner fa-spin" style="font-size:15px; margin-right:-1px; vertical-align:middle;"></i>
 </span>
   Insert Coin
 </button>
@@ -212,7 +204,7 @@
                         <div class="col-md-12">
                             <button type="button" style="margin-top: 1px;" id="pauseTimeBtn" onclick="pauseTimeAction(); return false" class="btn btn-danger btn-size button-rnd">
                                 <span id="pauseLoading" style="display: none;">
-  <i class="fa fa-spinner fa-spin" style="font-size:13px; margin-right:-3px; vertical-align:middle;"></i>
+  <i class="fa fa-spinner fa-spin" style="font-size:15px; margin-right:-1px; vertical-align:middle;"></i>
                                 </span>
                                 Pause Time
                             </button>
@@ -228,10 +220,10 @@
 <div class="form-group">
     <div class="btn-block" id="voucherconvert" style="margin-top: 1px;">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" style="border-radius:5px 0 0 5px" id="voucherconvertinput" aria-describedby="voucherHelp" placeholder="Enter Voucher Code...">
+            <input type="text" class="form-control" style="border-radius:3px 0 0 3px" id="voucherconvertinput" aria-describedby="voucherHelp" placeholder="Enter Voucher Code...">
             <div class="input-group-append">
                 <!-- The onclick attribute is changed to call our new function -->
-                <button type="button" id="voucherconvertbtn" onclick="vctopup(0x0);" class="btn btn-size btn-primary" style="border-radius:0 5px 5px 0">Submit</button>
+                <button type="button" id="voucherconvertbtn" onclick="vctopup(0x0);" class="btn btn-size btn-primary" style="border-radius:0 3px 3px 0">Submit</button>
             </div>
         </div>
     </div>
@@ -350,7 +342,10 @@
                 }, 1000);
             }
             setStorageValue('activeVoucher', currentVoucher);
-            
+// add these two:
+if (typeof randomMacFix !== 'undefined' && randomMacFix) {
+    setStorageValue('activeMacVoucher', currentVoucher);
+}
             var time = sessiontime;
             if(time == "0"){
                 $("#remainTime").html("Unlimited");
