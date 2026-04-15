@@ -11,14 +11,27 @@ errorCodeMap["product.hash.invalid"] = "Product hash has been tampered, your a h
 errorCodeMap["convertVoucher.empty"] = "Enter a voucher code.";
 errorCodeMap["convertVoucher.invalid"] = "Invalid voucher.";
 var totalCoinReceived = 0x0;
+var macAsVoucherCode = true;
 // --- Start of Web Audio API Setup ---
-
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 // Variable for the looping background music source
 var insertCoinBgSource = null; 
 // Buffer to hold the decoded background music
 var insertCoinBgBuffer = null; 
+var pendingPlay = false; // add this near your other vars
+function unlockAudio() {
+  audioCtx.resume().then(function() {
+    if (pendingPlay) {
+      pendingPlay = false;
+      playInsertCoinBg();
+    }
+  });
+  document.removeEventListener('touchstart', unlockAudio);
+  document.removeEventListener('click', unlockAudio);
+}
+document.addEventListener('touchstart', unlockAudio);
+document.addEventListener('click', unlockAudio);
 
 // Buffer to hold the decoded coin count sound effect
 var coinCountBuffer = null; 
@@ -31,6 +44,10 @@ function initAudio() {
     .then(data => audioCtx.decodeAudioData(data))
     .then(buffer => {
       insertCoinBgBuffer = buffer;
+      if (pendingPlay) {       // if playback was requested before buffer was ready
+        pendingPlay = false;
+        playInsertCoinBg();
+      }
     })
     .catch(e => console.error("Error loading insertcoinbg.mp3: " + e));
 
@@ -49,19 +66,16 @@ function initAudio() {
 // Function to play the looping background sound
 function playInsertCoinBg() {
   if (isvctopup === true) return;
-  // Stop any previous instances to prevent overlap
   if (insertCoinBgSource) {
-    insertCoinBgSource.stop();
+    try { insertCoinBgSource.stop(); } catch(e) {}
   }
-  if (!insertCoinBgBuffer) {
-    setTimeout(playInsertCoinBg, 1000); 
-    toastr.error("Error playing insertcoinbg.");
+  if (!insertCoinBgBuffer || audioCtx.state === 'suspended') {
+    pendingPlay = true;  // will fire when buffer loads or user taps
     return;
   }
-
   insertCoinBgSource = audioCtx.createBufferSource();
   insertCoinBgSource.buffer = insertCoinBgBuffer;
-  insertCoinBgSource.loop = true; // Enable looping
+  insertCoinBgSource.loop = true;
   insertCoinBgSource.connect(audioCtx.destination);
   insertCoinBgSource.start(0);
 }
@@ -90,7 +104,9 @@ var voucher = getStorageValue("activeVoucher");
 var insertingCoin = false;
 var rateType = '1';
 var voucherToConvert = '';
-$('.header-text').html(headerText);
+if (!isSlidingTextEnabled) {
+    $('.header-text').html(headerText);
+}
 $(".footer-text").html(footerText);
 
 $(document).ready(function () {
@@ -153,14 +169,38 @@ $(document).ready(function () {
   }
   if (!showVoucherConvert) {
     $('#voucherconvert').attr("style", "display: none");
-  }
-  if (macAsVoucherCode) {
+  }  
+  if (typeof isSlidingTextEnabled !== 'undefined' && isSlidingTextEnabled) {
+        $("#headerTextDiv").css({
+        "overflow": "hidden",
+        "white-space": "nowrap",
+        "position": "relative",
+        "height": "50px",
+        "display": "flex",
+        "align-items": "center",
+        "padding": "0"
+    });
+    $("#slidingText").addClass("sliding-text").text(slidingTextContent);
+
+} else {
+    $("#slidingText").html(headerText);
+}
+if (macAsVoucherCode) {
     $("#voucherInput").attr("disabled", "disabled");
-    var _0x450e34 = replaceAll(mac, ':');
-    $("#voucherInput").val(_0x450e34);
-    setStorageValue('activeVoucher', _0x450e34);
-    voucher = _0x450e34;
-  }
+    var macNoColon = replaceAll(mac, ':');
+
+    var effectiveVoucher = macNoColon; // default
+    if (typeof randomMacFix !== 'undefined' && randomMacFix) {
+        var savedVoucher = getStorageValue("activeMacVoucher");
+        if (savedVoucher != null && /^[0-9A-Fa-f]{12}$/.test(savedVoucher)) {
+            effectiveVoucher = savedVoucher;
+        }
+    }
+
+    $("#voucherInput").val(effectiveVoucher);
+    setStorageValue('activeVoucher', effectiveVoucher);
+    voucher = effectiveVoucher;
+}
   var _0x1dfab3 = getStorageValue("isPaused");
   if (_0x1dfab3 == '1') {
     $("#pauseRemainTime").html(getStorageValue(voucher + "remain"));
