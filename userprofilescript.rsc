@@ -521,9 +521,11 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n:local com      [/ip hotspot user get \$uID comment];\
     \n:local aUsrNote [:toarray \$com];\
     \n:local iSaleAmt [:tonum (\$aUsrNote->1)];\
+    \n\
     \n:local totaltime \$limit;\
     \n:local remainingt (\$limit - \$uptime);\
     \n:local totaluptime (\$limit - \$remainingt);\
+    \n:local validity \"\";\
     \n\
     \n# --- System Resources ---\
     \n:local cpuusage [/system resource get cpu-load];\
@@ -558,6 +560,7 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n    /system script set todayincome   source=\"\$iDailySales\";\
     \n    /system script set monthlyincome source=\"\$iMonthSales\";\
     \n    /system script set yearlyincome  source=\"\$iYearSales\";\
+    \n    :set validity [:pick \$com 0 [:find \$com \",\"]];\
     \n}\
     \n\
     \n# --- Resume Notification (comment was empty = resuming session) ---\
@@ -573,13 +576,180 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     content=\" . \"```\$rtimeMessage```%0A** **\") mode=https keep-result=no;\
     \n    }\
     \n}\
+    \n# --- Fix 0m validity (NodeMCU failure fallback) ---\
+    \n:if (\$validity = \"0m\") do={\
+    \n    :local vendorIp \"10.0.0.5\";\
+    \n    :local cachedRates [/system script get [find name=\"cachedrates\"] s\
+    ource];\
+    \n    :local foundValidity \"\";\
+    \n    :local freshRates \"\";\
+    \n    :local minutesCache \"\";\
+    \n\
+    \n    # Try fetching current rates from vendo\
+    \n    :do {\
+    \n        :set freshRates ([/tool fetch url=(\"http://10.0.0.5/getRates\?r\
+    ateType=1\") output=user as-value]->\"data\")\
+    \n    } on-error={}\
+    \n\
+    \n    :if (\$freshRates != \"\") do={\
+    \n        # Parse pipe-delimited rates and rebuild cache\
+    \n        :local newCache \"\";\
+    \n        :local remaining \$freshRates;\
+    \n        :local parsing true;\
+    \n        :while (\$parsing = true) do={\
+    \n            :local pipeIdx [:find \$remaining \"|\"];\
+    \n            :local entry \"\";\
+    \n            :if ([:len [:tostr \$pipeIdx]] > 0) do={\
+    \n                :set entry [:pick \$remaining 0 \$pipeIdx];\
+    \n                :set remaining [:pick \$remaining (\$pipeIdx + 1) [:len \
+    \$remaining]];\
+    \n            } else={\
+    \n                :set entry \$remaining;\
+    \n                :set parsing false;\
+    \n            }\
+    \n            :if ([:len \$entry] > 0) do={\
+    \n                :local p1 [:find \$entry \"#\"];\
+    \n                :local p2 [:find \$entry \"#\" (\$p1 + 1)];\
+    \n                :local p3 [:find \$entry \"#\" (\$p2 + 1)];\
+    \n                :local p4 [:find \$entry \"#\" (\$p3 + 1)];\
+    \n\
+    \n                :local eAmt     [:tonum [:pick \$entry (\$p1 + 1) \$p2]]\
+    ;\
+    \n                :local eValMins [:tonum [:pick \$entry (\$p3 + 1) \$p4]]\
+    ;\
+    \n\
+    \n                # Convert minutes to RouterOS interval string\
+    \n                :local days (\$eValMins / 1440);\
+    \n                :local rem  (\$eValMins % 1440);\
+    \n                :local hrs  (\$rem / 60);\
+    \n                :local mins (\$rem % 60);\
+    \n                :local hStr [:tostr \$hrs];  :if (\$hrs  < 10) do={ :set\
+    \_hStr  \"0\$hrs\";  }\
+    \n                :local mStr [:tostr \$mins]; :if (\$mins < 10) do={ :set\
+    \_mStr \"0\$mins\"; }\
+    \n                :local valStr \"\";\
+    \n                :if (\$days > 0) do={\
+    \n                    :set valStr (\"\$days\" . \"d\$hStr:\$mStr:00\");\
+    \n                } else={\
+    \n                    :set valStr \"\$hStr:\$mStr:00\";\
+    \n                }\
+    \n\
+    \n                # Append to new cache string (format: amount:intervalStr\
+    :minutes)\
+    \n                :if (\$newCache != \"\") do={ :set newCache (\$newCache \
+    . \",\"); }\
+    \n                :set newCache (\$newCache . \"\$eAmt:\$valStr:\$eValMins\
+    \");\
+    \n\
+    \n                # Build minutes cache for combination fallback\
+    \n                :if (\$minutesCache != \"\") do={ :set minutesCache (\$m\
+    inutesCache . \",\"); }\
+    \n                :set minutesCache (\$minutesCache . \"\$eAmt:\$eValMins\
+    \");\
+    \n\
+    \n                # Check if this rate exactly matches the paid amount\
+    \n                :if (\$eAmt = \$iSaleAmt) do={\
+    \n                    :set foundValidity \$valStr;\
+    \n                }\
+    \n            }\
+    \n        }\
+    \n\
+    \n        # Only write to cache script if rates have changed\
+    \n        :if (\$newCache != \$cachedRates) do={\
+    \n            /system script set [find name=\"cachedrates\"] source=\$newC\
+    ache;\
+    \n        }\
+    \n\
+    \n    } else={\
+    \n        # Vendo unreachable \E2\80\94 fall back to cached rates\
+    \n        # Cache format: amount:intervalStr:minutes\
+    \n        :foreach e in=[:toarray \$cachedRates] do={\
+    \n            :local cp1 [:find \$e \":\"];\
+    \n            :local cp2 [:find \$e \":\" (\$cp1 + 1)];\
+    \n            :if ([:len [:tostr \$cp1]] > 0 && [:len [:tostr \$cp2]] > 0)\
+    \_do={\
+    \n                :local eAmt        [:tonum [:pick \$e 0 \$cp1]];\
+    \n                :local eVal        [:pick \$e (\$cp1 + 1) \$cp2];\
+    \n                :local eMinsStored [:tonum [:pick \$e (\$cp2 + 1) [:len \
+    \$e]]];\
+    \n\
+    \n                :if (\$eAmt = \$iSaleAmt) do={\
+    \n                    :set foundValidity \$eVal;\
+    \n                }\
+    \n\
+    \n                # Build minutes cache from stored minutes\
+    \n                :if (\$minutesCache != \"\") do={ :set minutesCache (\$m\
+    inutesCache . \",\"); }\
+    \n                :set minutesCache (\$minutesCache . \"\$eAmt:\$eMinsStor\
+    ed\");\
+    \n            }\
+    \n        }\
+    \n    }\
+    \n\
+    \n    # Greedy combination fallback (e.g. \E2\82\B16 = \E2\82\B15 + \E2\82\
+    \B11)\
+    \n    :if (\$foundValidity = \"\") do={\
+    \n        :local remAmt \$iSaleAmt;\
+    \n        :local totalMins 0;\
+    \n        :local combined true;\
+    \n\
+    \n        :while (\$remAmt > 0 && \$combined = true) do={\
+    \n            :set combined false;\
+    \n            :local bestAmt 0;\
+    \n            :local bestMins 0;\
+    \n\
+    \n            :foreach e in=[:toarray \$minutesCache] do={\
+    \n                :local cp [:find \$e \":\"];\
+    \n                :local eAmt [:tonum [:pick \$e 0 \$cp]];\
+    \n                :local eMins [:tonum [:pick \$e (\$cp + 1) [:len \$e]]];\
+    \n                :if (\$eAmt <= \$remAmt && \$eAmt > \$bestAmt) do={\
+    \n                    :set bestAmt \$eAmt;\
+    \n                    :set bestMins \$eMins;\
+    \n                }\
+    \n            }\
+    \n\
+    \n            :if (\$bestAmt > 0) do={\
+    \n                :set totalMins (\$totalMins + \$bestMins);\
+    \n                :set remAmt (\$remAmt - \$bestAmt);\
+    \n                :set combined true;\
+    \n            }\
+    \n        }\
+    \n\
+    \n        # Only apply if amount was fully consumed with no remainder\
+    \n        :if (\$remAmt = 0 && \$totalMins > 0) do={\
+    \n            :local days (\$totalMins / 1440);\
+    \n            :local rem  (\$totalMins % 1440);\
+    \n            :local hrs  (\$rem / 60);\
+    \n            :local mins (\$rem % 60);\
+    \n            :local hStr [:tostr \$hrs];  :if (\$hrs  < 10) do={ :set hSt\
+    r  \"0\$hrs\";  }\
+    \n            :local mStr [:tostr \$mins]; :if (\$mins < 10) do={ :set mSt\
+    r \"0\$mins\"; }\
+    \n            :log info \"combining validity\";\
+    \n            :if (\$days > 0) do={\
+    \n                :set foundValidity (\"\$days\" . \"d\$hStr:\$mStr:00\");\
+    \n            } else={\
+    \n                :set foundValidity \"\$hStr:\$mStr:00\";\
+    \n            }\
+    \n            :log info \"Combined validity for P\$iSaleAmt: \$foundValidi\
+    ty\";\
+    \n        }\
+    \n    }\
+    \n\
+    \n    # Apply corrected validity\
+    \n    :if (\$foundValidity != \"\") do={\
+    \n        :set validity \$foundValidity;\
+    \n    } else={\
+    \n        :log warning \"No valid rate found for P\$iSaleAmt, session will\
+    \_have the validity not added.\";\
+    \n    }\
+    \n}\
     \n\
     \n# --- Clear comment flag ---\
     \n/ip hotspot user set comment=\"\" \$user;\
     \n\
     \n# --- New Purchase: Scheduler + Notification ---\
     \n:if (\$com != \"\") do={\
-    \n    :local validity [:pick \$com 0 [:find \$com \",\"]];\
     \n    :if (\$validity != \"0m\") do={\
     \n        :local sc [/sys scheduler find name=\$user];\
     \n        :if (\$sc = \"\") do={\
@@ -620,10 +790,9 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n                      \":delay 1s;\\r\\n\".\\\
     \n                      \"/file set \\\"\$hotspotFolder/data/\$macNoCol\\\
     \" contents=\\\"\$user#\$validUntil\\\";\\r\\n\".\\\
-    \n                      \":log warning \\\"juanfimonitoring.com ==> parall\
-    el script executed successfully.\\\";\\r\\n\")\
-    \n    } on-error={ :log error \"juanfimonitoring.com ==> parallel script c\
-    reation error.\"; }\
+    \n                      \":log warning \\\"parallel script executed succes\
+    sfully.\\\";\\r\\n\")\
+    \n    } on-error={ :log error \"parallel script creation error.\"; }\
     \n\
     \n    # --- Estimates ---\
     \n    :local currentday [:pick \$date 4 6];\
@@ -653,7 +822,6 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     content=\" . \"```\$loginMessage```%0A** **\") mode=https keep-result=no;\
     \n    }\
     \n}\
-    \n\
     \n# --- Update max active users record ---\
     \n:local rawSource [/system script get [find name=\"maxactiveusers\"] sour\
     ce];\
@@ -665,8 +833,9 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n    /system script set [find name=\"maxactiveusers\"] source=\"\$uactive\
     \";\
     \n}\
-    \n" on-logout="# =========================================================\
-    ===\
+    \n\
+    \n:log info \"\$validity\";" on-logout="# ================================\
+    ============================\
     \n# Hotspot Logout Script (Optimized)\
     \n# ============================================================\
     \n\
