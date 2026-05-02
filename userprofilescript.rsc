@@ -1,6 +1,10 @@
-:foreach sName in={"enabletelegram";"bottoken";"chatid";"enablediscord";"discordwebhook";"todayincome";"monthlyincome";"yearlyincome";"maxactiveusers"} do={
+:foreach sName in={"enabletelegram";"bottoken";"chatid";"enablediscord";"discordwebhook";"todayincome";"monthlyincome";"yearlyincome";"maxactiveusers";"cachedrates"} do={
     :if ([:len [/system script find name=$sName]] = 0) do={
-        /system script add name=$sName source="0" policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon;
+        :if ($sName = "cachedrates") do={
+            /system script add name=$sName source="" policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon;
+        } else={
+            /system script add name=$sName source="0" policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon;
+        }
         :log warning "Created missing script: $sName";
     }
 }
