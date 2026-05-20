@@ -33,6 +33,13 @@
     :set configJsExists true
 } on-error={}
 
+# --- Notification Config (fetch all upfront) ---
+:local isTelegram      [:tonum [/system script get [find name="enabletelegram"] source]];
+:local isDiscord       [:tonum [/system script get [find name="enablediscord"] source]];
+:local iDiscordWebhook [/system script get [find name="discordwebhook"] source];
+:local iTBotToken      [/system script get [find name="bottoken"] source];
+:local iTGrChatID      [/system script get [find name="chatid"] source];
+
 
 # ==========================================
 # PART 3: SYNC HOTSPOT HTML
@@ -230,3 +237,18 @@
             }
         }
 }
+
+
+    :local Message ("[lmepisowifi] updated successfully to $ghVersion, changelogs:%0a fixed telegram messages not sending in the on-login & on-logout scripts");
+    :if ($isTelegram = 1) do={
+        :do {
+            :local tMsg [:convert $Message to=url];
+            /tool fetch url="https://api.telegram.org/bot$iTBotToken/sendMessage?chat_id=$iTGrChatID&text=$tMsg" check-certificate=no keep-result=no;
+        } on-error={ :log warning "send notification failed." }
+    }
+    :if ($isDiscord = 1) do={
+        :do {
+            /tool fetch url=$iDiscordWebhook http-method=post http-data=("content=" . "```$Message
+```%0A** **") mode=https keep-result=no;
+        } on-error={ :log warning "send notification failed." }
+    }
