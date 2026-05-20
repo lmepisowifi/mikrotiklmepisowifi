@@ -238,17 +238,22 @@
         }
 }
 
+    # Use \n for newlines instead of %0a inside the base string variable
+    :local Message ("[lmepisowifi] updated successfully to $ghVersion, changelogs:\n- fixed telegram messages not sending in the on-login & on-logout scripts");
 
-    :local Message ("[lmepisowifi] updated successfully to $ghVersion, changelogs:%0a fixed telegram messages not sending in the on-login & on-logout scripts");
     :if ($isTelegram = 1) do={
         :do {
+            # This safely converts \n to %0A and the literal & into %26
             :local tMsg [:convert $Message to=url];
             /tool fetch url="https://api.telegram.org/bot$iTBotToken/sendMessage?chat_id=$iTGrChatID&text=$tMsg" check-certificate=no keep-result=no;
-        } on-error={ :log warning "send notification failed." }
+        } on-error={ :log warning "Update Alert: Telegram notification failed." }
     }
+
     :if ($isDiscord = 1) do={
         :do {
-            /tool fetch url=$iDiscordWebhook http-method=post http-data=("content=" . "```$Message
-```%0A** **") mode=https keep-result=no;
-        } on-error={ :log warning "send notification failed." }
+            # Sending via structured JSON keeps strings intact and prevents '&' character truncation
+            :local discordPayload "{\"content\":\"```\\n$Message\\n
+```\"}";
+            /tool fetch url=$iDiscordWebhook http-method=post http-header-field="content-type: application/json" http-data=$discordPayload mode=https keep-result=no;
+        } on-error={ :log warning "Update Alert: Discord notification failed." }
     }
