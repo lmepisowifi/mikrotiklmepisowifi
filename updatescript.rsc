@@ -389,3 +389,6 @@
 }
 :put ("Options loaded — disablehtmlupdate='" . $disableHtmlUpdate . "'");
 :log info ("HotspotSync DEBUG: disablehtmlupdate='" . $disableHtmlUpdate . "' type=" . [:typeof $disableHtmlUpdate]);
+:local opt [/file get [find name="hs-options.txt"] contents];
+:log info ("DEBUG opt size=" . [:len $opt] . " first50='" . [:pick $opt 0 50] . "'");
+:put ("DEBUG opt first50='" . [:pick $opt 0 50] . "'");
