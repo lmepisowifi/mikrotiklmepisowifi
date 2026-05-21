@@ -387,3 +387,5 @@
         }
     }
 }
+:put ("Options loaded — disablehtmlupdate='" . $disableHtmlUpdate . "'");
+:log info ("HotspotSync DEBUG: disablehtmlupdate='" . $disableHtmlUpdate . "' type=" . [:typeof $disableHtmlUpdate]);
