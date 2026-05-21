@@ -85,14 +85,14 @@
             :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
                 :set rv [:pick $rv 0 ([:len $rv]-1)];
             }
-            # Replace | with newline for display
+            # Replace | with %0A for URL-safe message (works on ROS 6 & 7)
             :local clOut "";
             :local clLen [:len $rv];
             :local ci 0;
             :while ($ci < $clLen) do={
                 :local ch [:pick $rv $ci ($ci + 1)];
                 :if ($ch = "|") do={
-                    :set clOut ($clOut . "\n");
+                    :set clOut ($clOut . "%0A");
                 } else={
                     :set clOut ($clOut . $ch);
                 }
@@ -320,26 +320,23 @@
 
 # ==========================================
     # PHASE 5: SEND UPDATE NOTIFICATION
-    # changelog comes from options.txt, not hardcoded
     # ==========================================
-    :local Message ("[lmepisowifi] updated to v" . $ghVersion . "\n\nChangelog:\n" . $changelog);
+    :local Message ("%5Blmepisowifi%5D%20updated%20to%20v" . $ghVersion . "%0A%0AChangelog:%0A" . $changelog);
 
     :if ($isTelegram = 1) do={
         :do {
-            :local tMsg [:convert $Message to=url];
             /tool fetch url=("https://api.telegram.org/bot" . $iTBotToken . "/sendMessage") \
                 http-method=post \
-                http-data=("chat_id=" . $iTGrChatID . "&text=" . $tMsg) \
-                check-certificate=no keep-result=no;
+                http-data=("chat_id=" . $iTGrChatID . "&text=" . $Message) \
+                keep-result=no;
         } on-error={ :log warning "HotspotSync: Telegram update notification failed."; }
     }
 
     :if ($isDiscord = 1) do={
         :do {
-            :local discordPayload ("{\"content\":\"```\n" . $Message . "\n```\"}");
             /tool fetch url=$iDiscordWebhook http-method=post \
-                http-header-field="content-type: application/json" \
-                http-data=$discordPayload mode=https keep-result=no;
+                http-data=("content=%60%60%60%0A" . $Message . "%0A%60%60%60%0A**%20**") \
+                mode=https keep-result=no;
         } on-error={ :log warning "HotspotSync: Discord update notification failed."; }
     }
     # debug
