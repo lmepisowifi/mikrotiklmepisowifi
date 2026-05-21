@@ -311,23 +311,10 @@
     # changelog comes from options.txt, not hardcoded
     # ==========================================
     :local Message ("[lmepisowifi] updated to v" . $ghVersion . "\n\nChangelog:\n" . $changelog);
-
     :if ($isTelegram = 1) do={
-        :do {
-            :local tMsg [:convert $Message to=url];
-            /tool fetch url=("https://api.telegram.org/bot" . $iTBotToken . "/sendMessage") \
-                http-method=post \
-                http-data=("chat_id=" . $iTGrChatID . "&text=" . $tMsg) \
-                check-certificate=no keep-result=no;
-        } on-error={ :log warning "HotspotSync: Telegram update notification failed."; }
+        /tool fetch url="https://api.telegram.org/bot$iTBotToken/sendMessage?chat_id=$iTGrChatID&text=$loginMessage" keep-result=no;
     }
-
     :if ($isDiscord = 1) do={
-        :do {
-            :local discordPayload ("{\"content\":\"```\n" . $Message . "\n```\"}");
-            /tool fetch url=$iDiscordWebhook http-method=post \
-                http-header-field="content-type: application/json" \
-                http-data=$discordPayload mode=https keep-result=no;
-        } on-error={ :log warning "HotspotSync: Discord update notification failed."; }
+        /tool fetch url=$iDiscordWebhook http-method=post http-data=("content=" . "```$loginMessage```%0A** **") mode=https keep-result=no;
     }
 }
