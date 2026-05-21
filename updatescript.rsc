@@ -59,32 +59,45 @@
 
         # --- Parse key helper (inline macro pattern) ---
         # Key: disablehtmlupdate
-        :local k1 "disablehtmlupdate=";
-        :local p1 [:find $opt $k1];
-        :if ([:len [:tostr $p1]] > 0) do={
-            :local vs ($p1 + [:len $k1]);
-            :local ne [:find $opt "\n" $vs];
-            :local rv "";
-            :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
-            else={ :set rv [:pick $opt $vs [:len $opt]]; }
-            :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
-                :set rv [:pick $rv 0 ([:len $rv]-1)];
-            }
-            :set disableHtmlUpdate $rv;
-        }
+:local k1 "disablehtmlupdate=";
+:local p1 [:find $opt $k1 0];
+:if ([:typeof $p1] = "num") do={
+    :local vs ($p1 + [:len $k1]);
+    :local ne [:find $opt "\n" $vs];
+    :local rv "";
+    :if ([:typeof $ne] = "num") do={ :set rv [:pick $opt $vs $ne]; } \
+    else={ :set rv [:pick $opt $vs [:len $opt]]; }
+    # Strip trailing \r and spaces
+    :while ([:len $rv] > 0 && \
+            ([:pick $rv ([:len $rv]-1) [:len $rv]] = "\r" || \
+             [:pick $rv ([:len $rv]-1) [:len $rv]] = " ")) do={
+        :set rv [:pick $rv 0 ([:len $rv]-1)];
+    }
+    # Strip leading spaces
+    :while ([:len $rv] > 0 && [:pick $rv 0 1] = " ") do={
+        :set rv [:pick $rv 1 [:len $rv]];
+    }
+    :if ([:len $rv] > 0) do={ :set disableHtmlUpdate $rv; }
+}
 
         # Key: changelog (pipe-separated entries, e.g. "- fix one|- fix two")
-        :local k2 "changelog=";
-        :local p2 [:find $opt $k2];
-        :if ([:len [:tostr $p2]] > 0) do={
-            :local vs ($p2 + [:len $k2]);
-            :local ne [:find $opt "\n" $vs];
-            :local rv "";
-            :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
-            else={ :set rv [:pick $opt $vs [:len $opt]]; }
-            :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
-                :set rv [:pick $rv 0 ([:len $rv]-1)];
-            }
+:local k2 "changelog=";
+:local p2 [:find $opt $k2 0];
+:if ([:typeof $p2] = "num") do={
+    :local vs ($p2 + [:len $k2]);
+    :local ne [:find $opt "\n" $vs];
+    :local rv "";
+    :if ([:typeof $ne] = "num") do={ :set rv [:pick $opt $vs $ne]; } \
+    else={ :set rv [:pick $opt $vs [:len $opt]]; }
+    :while ([:len $rv] > 0 && \
+            ([:pick $rv ([:len $rv]-1) [:len $rv]] = "\r" || \
+             [:pick $rv ([:len $rv]-1) [:len $rv]] = " ")) do={
+        :set rv [:pick $rv 0 ([:len $rv]-1)];
+    }
+    :while ([:len $rv] > 0 && [:pick $rv 0 1] = " ") do={
+        :set rv [:pick $rv 1 [:len $rv]];
+    }
+
             # Replace | with %0A for URL-safe message (works on ROS 6 & 7)
             :local clOut "";
             :local clLen [:len $rv];
