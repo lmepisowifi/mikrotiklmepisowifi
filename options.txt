@@ -1,0 +1,2 @@
+disablehtmlupdate=false
+changelog=- Switched Telegram to POST method to fix telegram messages not sending|- Fixed logout on-error handling
