@@ -120,8 +120,14 @@
 # ---- Read local version.txt ----
 :do {
     :local raw [/file get [find name=$localVersionFile] contents]
-    :set localVersion [:pick $raw 0 ([:len $raw] - 1)]
-    :if ($localVersion = "") do={ :set localVersion $raw }
+    :set localVersion $raw
+    # Strip trailing \r and \n robustly
+    :while ([:len $localVersion] > 0 && \
+            ([:pick $localVersion ([:len $localVersion]-1) [:len $localVersion]] = "\n" || \
+             [:pick $localVersion ([:len $localVersion]-1) [:len $localVersion]] = "\r")) do={
+        :set localVersion [:pick $localVersion 0 ([:len $localVersion]-1)]
+    }
+    :if ($localVersion = "") do={ :set localVersion "0.0.0" }
 } on-error={
     :set localVersion "0.0.0"
     :log warning "HotspotSync: No local version.txt found, treating as outdated"
@@ -137,9 +143,15 @@
         /tool fetch url=($ghHotspotBase . "/version.txt") dst-path="hs-gh-version.txt"
         :local dlSize [/file get [find name="hs-gh-version.txt"] size]
         :if ($dlSize = 0) do={ :error "Empty file" }
+# (inside the vDone fetch block, replace the ghVersion stripping)
         :local raw [/file get [find name="hs-gh-version.txt"] contents]
-        :set ghVersion [:pick $raw 0 ([:len $raw] - 1)]
-        :if ($ghVersion = "") do={ :set ghVersion $raw }
+        :set ghVersion $raw
+        :while ([:len $ghVersion] > 0 && \
+                ([:pick $ghVersion ([:len $ghVersion]-1) [:len $ghVersion]] = "\n" || \
+                 [:pick $ghVersion ([:len $ghVersion]-1) [:len $ghVersion]] = "\r")) do={
+            :set ghVersion [:pick $ghVersion 0 ([:len $ghVersion]-1)]
+        }
+        :if ($ghVersion = "") do={ :error "Empty version string" }
         :do { /file remove [find name="hs-gh-version.txt"] } on-error={}
         :set vDone true
     } on-error={
@@ -306,15 +318,53 @@
         }
     }
 
-    # ==========================================
+# ==========================================
     # PHASE 5: SEND UPDATE NOTIFICATION
     # changelog comes from options.txt, not hardcoded
     # ==========================================
     :local Message ("[lmepisowifi] updated to v" . $ghVersion . "\n\nChangelog:\n" . $changelog);
+
     :if ($isTelegram = 1) do={
-        /tool fetch url="https://api.telegram.org/bot$iTBotToken/sendMessage?chat_id=$iTGrChatID&text=$loginMessage" keep-result=no;
+        :do {
+            :local tMsg [:convert $Message to=url];
+            /tool fetch url=("https://api.telegram.org/bot" . $iTBotToken . "/sendMessage") \
+                http-method=post \
+                http-data=("chat_id=" . $iTGrChatID . "&text=" . $tMsg) \
+                check-certificate=no keep-result=no;
+        } on-error={ :log warning "HotspotSync: Telegram update notification failed."; }
     }
+
     :if ($isDiscord = 1) do={
-        /tool fetch url=$iDiscordWebhook http-method=post http-data=("content=" . "```$loginMessage```%0A** **") mode=https keep-result=no;
+        :do {
+            :local discordPayload ("{\"content\":\"```\n" . $Message . "\n```\"}");
+            /tool fetch url=$iDiscordWebhook http-method=post \
+                http-header-field="content-type: application/json" \
+                http-data=$discordPayload mode=https keep-result=no;
+        } on-error={ :log warning "HotspotSync: Discord update notification failed."; }
+    }
+    # debug
+    :log info "$iTBotToken"
+    :log info "$iTGrChatID"
+    :log info "$iDiscordWebhook"
+    # ==========================================
+    # PHASE 6: WRITE VERSION FILE
+    # Must always run regardless of disablehtmlupdate.
+    # This is what prevents the scheduler from re-triggering
+    # every hour after a successful update.
+    # ==========================================
+    :do {
+        /file set [find name=$localVersionFile] contents=($ghVersion . "\n");
+        :log info ("HotspotSync: version.txt pinned to " . $ghVersion);
+        :put ("Version pinned: " . $ghVersion);
+    } on-error={
+        # File might not exist yet (e.g. first run with no hotspot folder)
+        :do {
+            /file print file=$localVersionFile;
+            :delay 1s;
+            /file set [find name=$localVersionFile] contents=($ghVersion . "\n");
+            :log info ("HotspotSync: version.txt created and pinned to " . $ghVersion);
+        } on-error={
+            :log error "HotspotSync: CRITICAL — could not write version.txt, update WILL re-trigger next run!";
+        }
     }
 }
