@@ -58,48 +58,47 @@
         :local opt [/file get [find name="hs-options.txt"] contents];
 
         # --- Parse key helper (inline macro pattern) ---
-        # Key: disablehtmlupdate
-        :local k1 "disablehtmlupdate=";
-        :local p1 [:find $opt $k1];
-        :if ([:len [:tostr $p1]] > 0) do={
-            :local vs ($p1 + [:len $k1]);
-            :local ne [:find $opt "\n" $vs];
-            :local rv "";
-            :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
-            else={ :set rv [:pick $opt $vs [:len $opt]]; }
-            :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
-                :set rv [:pick $rv 0 ([:len $rv]-1)];
-            }
-            :set disableHtmlUpdate $rv;
-        }
+# Key: disablehtmlupdate
+:local k1 "disablehtmlupdate=";
+:local p1 [:find $opt $k1];
+:if ([:typeof $p1] = "num") do={
+    :local vs ($p1 + [:len $k1]);
+    :local ne [:find $opt "\n" $vs];
+    :local rv "";
+    :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
+    else={ :set rv [:pick $opt $vs [:len $opt]]; }
+    :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
+        :set rv [:pick $rv 0 ([:len $rv]-1)];
+    }
+    :set disableHtmlUpdate $rv;
+}
 
-        # Key: changelog (pipe-separated entries, e.g. "- fix one|- fix two")
-        :local k2 "changelog=";
-        :local p2 [:find $opt $k2];
-        :if ([:len [:tostr $p2]] > 0) do={
-            :local vs ($p2 + [:len $k2]);
-            :local ne [:find $opt "\n" $vs];
-            :local rv "";
-            :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
-            else={ :set rv [:pick $opt $vs [:len $opt]]; }
-            :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
-                :set rv [:pick $rv 0 ([:len $rv]-1)];
-            }
-            # Replace | with %0A for URL-safe message (works on ROS 6 & 7)
-            :local clOut "";
-            :local clLen [:len $rv];
-            :local ci 0;
-            :while ($ci < $clLen) do={
-                :local ch [:pick $rv $ci ($ci + 1)];
-                :if ($ch = "|") do={
-                    :set clOut ($clOut . "%0A");
-                } else={
-                    :set clOut ($clOut . $ch);
-                }
-                :set ci ($ci + 1);
-            }
-            :set changelog $clOut;
+# Key: changelog
+:local k2 "changelog=";
+:local p2 [:find $opt $k2];
+:if ([:typeof $p2] = "num") do={
+    :local vs ($p2 + [:len $k2]);
+    :local ne [:find $opt "\n" $vs];
+    :local rv "";
+    :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
+    else={ :set rv [:pick $opt $vs [:len $opt]]; }
+    :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
+        :set rv [:pick $rv 0 ([:len $rv]-1)];
+    }
+    :local clOut "";
+    :local clLen [:len $rv];
+    :local ci 0;
+    :while ($ci < $clLen) do={
+        :local ch [:pick $rv $ci ($ci + 1)];
+        :if ($ch = "|") do={
+            :set clOut ($clOut . "%0A");
+        } else={
+            :set clOut ($clOut . $ch);
         }
+        :set ci ($ci + 1);
+    }
+    :set changelog $clOut;
+}
     }
     :do { /file remove [find name="hs-options.txt"] } on-error={}
 } on-error={
