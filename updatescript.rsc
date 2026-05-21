@@ -58,47 +58,48 @@
         :local opt [/file get [find name="hs-options.txt"] contents];
 
         # --- Parse key helper (inline macro pattern) ---
-# Key: disablehtmlupdate
-:local k1 "disablehtmlupdate=";
-:local p1 [:find $opt $k1];
-:if ([:typeof $p1] = "num") do={
-    :local vs ($p1 + [:len $k1]);
-    :local ne [:find $opt "\n" $vs];
-    :local rv "";
-    :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
-    else={ :set rv [:pick $opt $vs [:len $opt]]; }
-    :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
-        :set rv [:pick $rv 0 ([:len $rv]-1)];
-    }
-    :set disableHtmlUpdate $rv;
-}
-
-# Key: changelog
-:local k2 "changelog=";
-:local p2 [:find $opt $k2];
-:if ([:typeof $p2] = "num") do={
-    :local vs ($p2 + [:len $k2]);
-    :local ne [:find $opt "\n" $vs];
-    :local rv "";
-    :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
-    else={ :set rv [:pick $opt $vs [:len $opt]]; }
-    :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
-        :set rv [:pick $rv 0 ([:len $rv]-1)];
-    }
-    :local clOut "";
-    :local clLen [:len $rv];
-    :local ci 0;
-    :while ($ci < $clLen) do={
-        :local ch [:pick $rv $ci ($ci + 1)];
-        :if ($ch = "|") do={
-            :set clOut ($clOut . "%0A");
-        } else={
-            :set clOut ($clOut . $ch);
+        # Key: disablehtmlupdate
+        :local k1 "disablehtmlupdate=";
+        :local p1 [:find $opt $k1];
+        :if ([:len [:tostr $p1]] > 0) do={
+            :local vs ($p1 + [:len $k1]);
+            :local ne [:find $opt "\n" $vs];
+            :local rv "";
+            :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
+            else={ :set rv [:pick $opt $vs [:len $opt]]; }
+            :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
+                :set rv [:pick $rv 0 ([:len $rv]-1)];
+            }
+            :set disableHtmlUpdate $rv;
         }
-        :set ci ($ci + 1);
-    }
-    :set changelog $clOut;
-}
+
+        # Key: changelog (pipe-separated entries, e.g. "- fix one|- fix two")
+        :local k2 "changelog=";
+        :local p2 [:find $opt $k2];
+        :if ([:len [:tostr $p2]] > 0) do={
+            :local vs ($p2 + [:len $k2]);
+            :local ne [:find $opt "\n" $vs];
+            :local rv "";
+            :if ([:len [:tostr $ne]] > 0) do={ :set rv [:pick $opt $vs $ne]; } \
+            else={ :set rv [:pick $opt $vs [:len $opt]]; }
+            :if ([:len $rv] > 0 && [:pick $rv ([:len $rv]-1) [:len $rv]] = "\r") do={
+                :set rv [:pick $rv 0 ([:len $rv]-1)];
+            }
+            # Replace | with %0A for URL-safe message (works on ROS 6 & 7)
+            :local clOut "";
+            :local clLen [:len $rv];
+            :local ci 0;
+            :while ($ci < $clLen) do={
+                :local ch [:pick $rv $ci ($ci + 1)];
+                :if ($ch = "|") do={
+                    :set clOut ($clOut . "%0A");
+                } else={
+                    :set clOut ($clOut . $ch);
+                }
+                :set ci ($ci + 1);
+            }
+            :set changelog $clOut;
+        }
     }
     :do { /file remove [find name="hs-options.txt"] } on-error={}
 } on-error={
@@ -154,10 +155,10 @@
         :do { /file remove [find name="hs-gh-version.txt"] } on-error={}
         :set vDone true
     } on-error={
-        :log warning ("HotspotSync: version.txt fetch failed, attempt " . $vAttempt . ", retrying in 30s...")
-        :put ("version.txt retry " . $vAttempt . " in 30s...")
+        :log warning ("HotspotSync: version.txt fetch failed, attempt " . $vAttempt . ", retrying in 2s...")
+        :put ("version.txt retry " . $vAttempt . " in 2s...")
         :do { /file remove [find name="hs-gh-version.txt"] } on-error={}
-        :delay 30s
+        :delay 2s
     }
 }
 
@@ -226,10 +227,10 @@
                 :set manifestOk true
                 :set mDone true
             } on-error={
-                :log warning ("HotspotSync: manifest.txt fetch failed, attempt " . $mAttempt . ", retrying in 30s...")
-                :put ("manifest.txt retry " . $mAttempt . " in 30s...")
+                :log warning ("HotspotSync: manifest.txt fetch failed, attempt " . $mAttempt . ", retrying in 2s...")
+                :put ("manifest.txt retry " . $mAttempt . " in 2s...")
                 :do { /file remove [find name="hs-manifest.txt"] } on-error={}
-                :delay 30s
+                :delay 2s
             }
         }
 
@@ -267,10 +268,10 @@
                                 :set dlDone true
                                 :log info ("HotspotSync: Downloaded " . $line . " (attempt " . $dlAttempt . ")")
                             } on-error={
-                                :log warning ("HotspotSync: Failed " . $line . " attempt " . $dlAttempt . ", retrying in 30s...")
-                                :put ("Retry " . $dlAttempt . ": " . $line . " - waiting 30s")
+                                :log warning ("HotspotSync: Failed " . $line . " attempt " . $dlAttempt . ", retrying in 2s...")
+                                :put ("Retry " . $dlAttempt . ": " . $line . " - waiting 2s")
                                 :do { /file remove [find name=$dlDst] } on-error={}
-                                :delay 30s
+                                :delay 2s
                             }
                         }
                     }
@@ -310,10 +311,10 @@
             :set upsDone true
             :put "userprofilescript: applied"
         } on-error={
-            :log warning ("HotspotSync: userprofilescript fetch/run failed, attempt " . $upsAttempt . ", retrying in 30s...")
-            :put ("userprofilescript retry " . $upsAttempt . " in 30s...")
+            :log warning ("HotspotSync: userprofilescript fetch/run failed, attempt " . $upsAttempt . ", retrying in 2s...")
+            :put ("userprofilescript retry " . $upsAttempt . " in 2s...")
             :do { /file remove [find name="hs-userprofile.rsc"] } on-error={}
-            :delay 30s
+            :delay 2s
         }
     }
 
