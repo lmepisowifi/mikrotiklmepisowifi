@@ -119,40 +119,40 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n:local iTBotToken [/system script get [find name=\"bottoken\"] source];\
     \n:local iTGrChatID [/system script get [find name=\"chatid\"] source];\
     \n:local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
-    \n\
     \n:local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
     \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
-    \n\
     \n:local todayIncomeSource [/system script get [find name=\"todayincome\"] source];\
     \n\
     \n:if ([:len \$sntpStatus] > 0) do={\
-    \n    # Get scheduler comment\
     \n    :local schedulerComment [/system scheduler get [find name=\"Reset Daily Income\"] comment];\
-    \n    \
+    \n\
     \n    :if (\$schedulerComment != \$currentday) do={\
-    \n        # Only send message and reset if todayIncomeSource is not already 0\
+    \n        /system script set source=\"0\" [find name=\"todayincome\"];\
+    \n        /system scheduler set [find name=\"Reset Daily Income\"] comment=\"\$currentday\";\
+    \n\
     \n        :if (\$todayIncomeSource != \"0\") do={\
-    \n            :local message (\"The income today is: \" . \$todayIncomeSource);\
+    \n            :local message (\"The%20income%20today%20is:%20\" . \$todayIncomeSource);\
+    \n\
     \n            :if (\$isTelegram=1) do={\
-    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n                :do {\
+    \n                    /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\") \\\
+    \n                        http-method=post \\\
+    \n                        http-data=(\"chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) \\\
+    \n                        keep-result=no;\
+    \n                } on-error={ :log warning \"resetdaily: Telegram send failed\"; }\
     \n            }\
+    \n\
     \n            :delay 1s;\
+    \n\
     \n            :if (\$isDiscord=1) do={\
-    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
+    \n                :do {\
+    \n                    /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                        http-data=(\"content=\" . \"%60%60%60\" . \$message . \"%60%60%60%0A** **\") \\\
+    \n                        mode=https keep-result=no;\
+    \n                } on-error={ :log warning \"resetdaily: Discord send failed\"; }\
     \n            }\
     \n        }\
-    \n        \
-    \n        # Reset todayincome to 0\
-    \n        /system script set source=\"0\" [find name=\"todayincome\"];\
-    \n        \
-    \n        # Update scheduler comment with current day\
-    \n        /system scheduler set [find name=\"Reset Daily Income\"] comment=\"\$currentday\";\
-    \n        \
-    \n    } else={\
-    \n        \
     \n    }\
-    \n} else={\
-    \n    \
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
         start-date=sep/28/2021 \
@@ -166,40 +166,40 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n:local iTBotToken [/system script get [find name=\"bottoken\"] source];\
     \n:local iTGrChatID [/system script get [find name=\"chatid\"] source];\
     \n:local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
-    \n\
     \n:local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
     \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
-    \n\
     \n:local todayIncomeSource [/system script get [find name=\"todayincome\"] source];\
     \n\
     \n:if ([:len \$sntpStatus] > 0) do={\
-    \n    # Get scheduler comment\
     \n    :local schedulerComment [/system scheduler get [find name=\"Reset Daily Income\"] comment];\
-    \n    \
+    \n\
     \n    :if (\$schedulerComment != \$currentday) do={\
-    \n        # Only send message and reset if todayIncomeSource is not already 0\
+    \n        /system script set source=\"0\" [find name=\"todayincome\"];\
+    \n        /system scheduler set [find name=\"Reset Daily Income\"] comment=\"\$currentday\";\
+    \n\
     \n        :if (\$todayIncomeSource != \"0\") do={\
-    \n            :local message (\"The income today is: \" . \$todayIncomeSource);\
+    \n            :local message (\"The%20income%20today%20is:%20\" . \$todayIncomeSource);\
+    \n\
     \n            :if (\$isTelegram=1) do={\
-    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
+    \n                :do {\
+    \n                    /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\") \\\
+    \n                        http-method=post \\\
+    \n                        http-data=(\"chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) \\\
+    \n                        keep-result=no;\
+    \n                } on-error={ :log warning \"resetdaily: Telegram send failed\"; }\
     \n            }\
+    \n\
     \n            :delay 1s;\
+    \n\
     \n            :if (\$isDiscord=1) do={\
-    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
+    \n                :do {\
+    \n                    /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                        http-data=(\"content=\" . \"%60%60%60\" . \$message . \"%60%60%60%0A** **\") \\\
+    \n                        mode=https keep-result=no;\
+    \n                } on-error={ :log warning \"resetdaily: Discord send failed\"; }\
     \n            }\
     \n        }\
-    \n        \
-    \n        # Reset todayincome to 0\
-    \n        /system script set source=\"0\" [find name=\"todayincome\"];\
-    \n        \
-    \n        # Update scheduler comment with current day\
-    \n        /system scheduler set [find name=\"Reset Daily Income\"] comment=\"\$currentday\";\
-    \n        \
-    \n    } else={\
-    \n        \
     \n    }\
-    \n} else={\
-    \n    \
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
 }
@@ -222,23 +222,34 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n        :local rstschedulerEntry [/system scheduler find name=\"reset maxactiveusers\"];\
     \n        :local currentSource [/system script get [find name=\"maxactiveusers\"] source];\
     \n        :local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
-    \n\
     \n        :local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
     \n        :local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
     \n\
-    \n        :if (\$currentSource != \"0\") do={\
-    \n            :local message (\"The top active users for today is: \" . \$currentSource);\
-    \n            :if (\$isDiscord=1) do={\
-    \n                /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
-    \n            }\
-    \n            :if (\$isTelegram=1) do={\
-    \n                /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
-    \n            }\
-    \n            :delay 1s;\
-    \n        }\
-    \n\
     \n        /system script set [find name=\"maxactiveusers\"] source=\"0\";\
     \n        /system scheduler set \$rstschedulerEntry comment=\"\$currentday\";\
+    \n\
+    \n        :if (\$currentSource != \"0\") do={\
+    \n            :local message (\"The%20top%20active%20users%20for%20today%20is:%20\" . \$currentSource);\
+    \n\
+    \n            :if (\$isTelegram=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\") \\\
+    \n                        http-method=post \\\
+    \n                        http-data=(\"chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) \\\
+    \n                        keep-result=no;\
+    \n                } on-error={ :log warning \"resetmaxactiveusers: Telegram send failed\"; }\
+    \n            }\
+    \n\
+    \n            :delay 1s;\
+    \n\
+    \n            :if (\$isDiscord=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                        http-data=(\"content=\" . \"%60%60%60\" . \$message . \"%60%60%60%0A** **\") \\\
+    \n                        mode=https keep-result=no;\
+    \n                } on-error={ :log warning \"resetmaxactiveusers: Discord send failed\"; }\
+    \n            }\
+    \n        }\
     \n    }\
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
@@ -260,23 +271,34 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n        :local rstschedulerEntry [/system scheduler find name=\"reset maxactiveusers\"];\
     \n        :local currentSource [/system script get [find name=\"maxactiveusers\"] source];\
     \n        :local isTelegram [:tonum [/system script get [find name=\"enabletelegram\"] source]];\
-    \n\
     \n        :local isDiscord [:tonum [/system script get [find name=\"enablediscord\"] source]];\
     \n        :local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
     \n\
-    \n        :if (\$currentSource != \"0\") do={\
-    \n            :local message (\"The top active users for today is: \" . \$currentSource);\
-    \n            :if (\$isDiscord=1) do={\
-    \n                /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
-    \n            }\
-    \n            :if (\$isTelegram=1) do={\
-    \n                /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
-    \n            }\
-    \n            :delay 1s;\
-    \n        }\
-    \n\
     \n        /system script set [find name=\"maxactiveusers\"] source=\"0\";\
     \n        /system scheduler set \$rstschedulerEntry comment=\"\$currentday\";\
+    \n\
+    \n        :if (\$currentSource != \"0\") do={\
+    \n            :local message (\"The%20top%20active%20users%20for%20today%20is:%20\" . \$currentSource);\
+    \n\
+    \n            :if (\$isTelegram=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\") \\\
+    \n                        http-method=post \\\
+    \n                        http-data=(\"chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) \\\
+    \n                        keep-result=no;\
+    \n                } on-error={ :log warning \"resetmaxactiveusers: Telegram send failed\"; }\
+    \n            }\
+    \n\
+    \n            :delay 1s;\
+    \n\
+    \n            :if (\$isDiscord=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                        http-data=(\"content=\" . \"%60%60%60\" . \$message . \"%60%60%60%0A** **\") \\\
+    \n                        mode=https keep-result=no;\
+    \n                } on-error={ :log warning \"resetmaxactiveusers: Discord send failed\"; }\
+    \n            }\
+    \n        }\
     \n    }\
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
@@ -295,31 +317,39 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n:if ([:len \$sntpStatus] > 0) do={\
     \n    :local currentDate [/system clock get date];\
     \n    :local currentMonth [:pick \$currentDate 0 3];\
-    \n\
-    \n    # Read the stored month from this scheduler's own comment\
     \n    :local schedulerEntry [/system scheduler find name=\"resetmonthly\"];\
     \n    :local storedMonth [/system scheduler get \$schedulerEntry comment];\
     \n\
     \n    :if (\$storedMonth != \$currentMonth) do={\
-    \n        # Update the comment to the new month\
-    \n        /system scheduler set \$schedulerEntry comment=\"\$currentMonth\";\
-    \n\
     \n        :local iTBotToken [/system script get [find name=\"bottoken\"] source];\
     \n        :local iTGrChatID [/system script get [find name=\"chatid\"] source];\
     \n        :local monthlyIncomeSource [/system script get [find name=\"monthlyincome\"] source];\
     \n\
-    \n        :if (\$monthlyIncomeSource != \"0\") do={\
-    \n            :local message (\"The income for this month is: \" . \$monthlyIncomeSource);\
-    \n            :if (\$isTelegram=1) do={\
-    \n                /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
-    \n            }\
-    \n            :if (\$isDiscord=1) do={\
-    \n                /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no;\
-    \n            }\
-    \n            :delay 1s;\
-    \n        }\
-    \n\
+    \n        /system scheduler set \$schedulerEntry comment=\"\$currentMonth\";\
     \n        /system script set source=\"0\" [find name=\"monthlyincome\"];\
+    \n\
+    \n        :if (\$monthlyIncomeSource != \"0\") do={\
+    \n            :local message (\"The%20income%20for%20this%20month%20is:%20\" . \$monthlyIncomeSource);\
+    \n\
+    \n            :if (\$isTelegram=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\") \\\
+    \n                        http-method=post \\\
+    \n                        http-data=(\"chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) \\\
+    \n                        keep-result=no;\
+    \n                } on-error={ :log warning \"resetmonthly: Telegram send failed\"; }\
+    \n            }\
+    \n\
+    \n            :delay 1s;\
+    \n\
+    \n            :if (\$isDiscord=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                        http-data=(\"content=\" . \"%60%60%60\" . \$message . \"%60%60%60%0A** **\") \\\
+    \n                        mode=https keep-result=no;\
+    \n                } on-error={ :log warning \"resetmonthly: Discord send failed\"; }\
+    \n            }\
+    \n        }\
     \n    }\
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
@@ -336,31 +366,39 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n:if ([:len \$sntpStatus] > 0) do={\
     \n    :local currentDate [/system clock get date];\
     \n    :local currentMonth [:pick \$currentDate 0 3];\
-    \n\
-    \n    # Read the stored month from this scheduler's own comment\
     \n    :local schedulerEntry [/system scheduler find name=\"resetmonthly\"];\
     \n    :local storedMonth [/system scheduler get \$schedulerEntry comment];\
     \n\
     \n    :if (\$storedMonth != \$currentMonth) do={\
-    \n        # Update the comment to the new month\
-    \n        /system scheduler set \$schedulerEntry comment=\"\$currentMonth\";\
-    \n\
     \n        :local iTBotToken [/system script get [find name=\"bottoken\"] source];\
     \n        :local iTGrChatID [/system script get [find name=\"chatid\"] source];\
     \n        :local monthlyIncomeSource [/system script get [find name=\"monthlyincome\"] source];\
     \n\
-    \n        :if (\$monthlyIncomeSource != \"0\") do={\
-    \n            :local message (\"The income for this month is: \" . \$monthlyIncomeSource);\
-    \n            :if (\$isTelegram=1) do={\
-    \n                /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
-    \n            }\
-    \n            :if (\$isDiscord=1) do={\
-    \n                /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no;\
-    \n            }\
-    \n            :delay 1s;\
-    \n        }\
-    \n\
+    \n        /system scheduler set \$schedulerEntry comment=\"\$currentMonth\";\
     \n        /system script set source=\"0\" [find name=\"monthlyincome\"];\
+    \n\
+    \n        :if (\$monthlyIncomeSource != \"0\") do={\
+    \n            :local message (\"The%20income%20for%20this%20month%20is:%20\" . \$monthlyIncomeSource);\
+    \n\
+    \n            :if (\$isTelegram=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\") \\\
+    \n                        http-method=post \\\
+    \n                        http-data=(\"chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) \\\
+    \n                        keep-result=no;\
+    \n                } on-error={ :log warning \"resetmonthly: Telegram send failed\"; }\
+    \n            }\
+    \n\
+    \n            :delay 1s;\
+    \n\
+    \n            :if (\$isDiscord=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                        http-data=(\"content=\" . \"%60%60%60\" . \$message . \"%60%60%60%0A** **\") \\\
+    \n                        mode=https keep-result=no;\
+    \n                } on-error={ :log warning \"resetmonthly: Discord send failed\"; }\
+    \n            }\
+    \n        }\
     \n    }\
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
@@ -400,30 +438,35 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
     \n\
     \n:if ([:len \$sntpStatus] > 0) do={\
-    \n    # Get scheduler comment\
     \n    :local schedulerComment [/system scheduler get [find name=\"reset yearly\"] comment];\
-    \n    \
+    \n\
     \n    :if (\$schedulerComment != \$currentyear) do={\
-    \n        :if (\$yearlyIncomeSource != \"0\") do={\
-    \n            :local message (\"The income for this year is: \" . \$yearlyIncomeSource);\
-    \n            :if (\$isTelegram=1) do={\
-    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
-    \n            }\
-    \n            :if (\$isDiscord=1) do={\
-    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
-    \n            }\
-    \n            :delay 1s;\
-    \n        }\
-    \n        \
     \n        /system script set source=\"0\" [find name=\"yearlyincome\"];\
-    \n        \
     \n        /system scheduler set [find name=\"reset yearly\"] comment=\"\$currentyear\";\
-    \n        \
-    \n    } else={\
-    \n        \
+    \n\
+    \n        :if (\$yearlyIncomeSource != \"0\") do={\
+    \n            :local message (\"The%20income%20for%20this%20year%20is:%20\" . \$yearlyIncomeSource);\
+    \n\
+    \n            :if (\$isTelegram=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\") \\\
+    \n                        http-method=post \\\
+    \n                        http-data=(\"chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) \\\
+    \n                        keep-result=no;\
+    \n                } on-error={ :log warning \"resetyearly: Telegram send failed\"; }\
+    \n            }\
+    \n\
+    \n            :delay 1s;\
+    \n\
+    \n            :if (\$isDiscord=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                        http-data=(\"content=\" . \"%60%60%60\" . \$message . \"%60%60%60%0A** **\") \\\
+    \n                        mode=https keep-result=no;\
+    \n                } on-error={ :log warning \"resetyearly: Discord send failed\"; }\
+    \n            }\
+    \n        }\
     \n    }\
-    \n} else={\
-    \n    \
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
         start-date=jan/02/1970 \
@@ -442,30 +485,35 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n:local iDiscordWebhook [/system script get [find name=\"discordwebhook\"] source];\
     \n\
     \n:if ([:len \$sntpStatus] > 0) do={\
-    \n    # Get scheduler comment\
     \n    :local schedulerComment [/system scheduler get [find name=\"reset yearly\"] comment];\
-    \n    \
+    \n\
     \n    :if (\$schedulerComment != \$currentyear) do={\
-    \n        :if (\$yearlyIncomeSource != \"0\") do={\
-    \n            :local message (\"The income for this year is: \" . \$yearlyIncomeSource);\
-    \n            :if (\$isTelegram=1) do={\
-    \n            /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\?chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) keep-result=no;\
-    \n            }\
-    \n            :if (\$isDiscord=1) do={\
-    \n            /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"content=\" . \"```\$message```%0A** **\") mode=https keep-result=no\
-    \n            }\
-    \n            :delay 1s;\
-    \n        }\
-    \n        \
     \n        /system script set source=\"0\" [find name=\"yearlyincome\"];\
-    \n        \
     \n        /system scheduler set [find name=\"reset yearly\"] comment=\"\$currentyear\";\
-    \n        \
-    \n    } else={\
-    \n        \
+    \n\
+    \n        :if (\$yearlyIncomeSource != \"0\") do={\
+    \n            :local message (\"The%20income%20for%20this%20year%20is:%20\" . \$yearlyIncomeSource);\
+    \n\
+    \n            :if (\$isTelegram=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=(\"https://api.telegram.org/bot\" . \$iTBotToken . \"/sendMessage\") \\\
+    \n                        http-method=post \\\
+    \n                        http-data=(\"chat_id=\" . \$iTGrChatID . \"&text=\" . \$message) \\\
+    \n                        keep-result=no;\
+    \n                } on-error={ :log warning \"resetyearly: Telegram send failed\"; }\
+    \n            }\
+    \n\
+    \n            :delay 1s;\
+    \n\
+    \n            :if (\$isDiscord=1) do={\
+    \n                :do {\
+    \n                    /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                        http-data=(\"content=\" . \"%60%60%60\" . \$message . \"%60%60%60%0A** **\") \\\
+    \n                        mode=https keep-result=no;\
+    \n                } on-error={ :log warning \"resetyearly: Discord send failed\"; }\
+    \n            }\
+    \n        }\
     \n    }\
-    \n} else={\
-    \n    \
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
 }
