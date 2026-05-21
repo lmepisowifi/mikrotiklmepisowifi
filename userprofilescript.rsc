@@ -469,7 +469,6 @@ set enabled=yes primary-ntp=[:resolve ntp.pagasa.dost.gov.ph] secondary-ntp=[:re
     \n}" \
         policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon
 }
-
 /ip hotspot user profile
 set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     autospeedlimit on-login="# ===============================================\
@@ -572,12 +571,24 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n    :local rtimeMessage (\"\$user%20resumed%20time,%20remaining%20time%2\
     0is%20\$remainingt%0AActive%20Users:%20\$uactive\");\
     \n    :if (\$isTelegram = 1) do={\
-    \n        /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/sendM\
-    essage\?chat_id=\$iTGrChatID&text=\$rtimeMessage\" keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/s\
+    endMessage\" \\\
+    \n                http-method=post \\\
+    \n                http-data=\"chat_id=\$iTGrChatID&text=\$rtimeMessage\" \
+    \\\
+    \n                keep-result=no;\
+    \n        } on-error={ :log error \"Telegram resume notification failed.\"\
+    ; }\
     \n    }\
     \n    :if (\$isDiscord = 1) do={\
-    \n        /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"\
-    content=\" . \"```\$rtimeMessage```%0A** **\") mode=https keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                http-data=(\"content=\" . \"```\$rtimeMessage```%0A** **\
+    \") \\\
+    \n                mode=https keep-result=no;\
+    \n        } on-error={ :log error \"Discord resume notification failed.\";\
+    \_}\
     \n    }\
     \n}\
     \n# --- Fix 0m validity (NodeMCU failure fallback) ---\
@@ -818,12 +829,24 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     nth%0A%0A(Note:%20The%20Estimates%20are%20not%20the%20current%20sales.)%0A\
     %0ADate%20%26%20Timestamp:%20\$date%20\$time\");\
     \n    :if (\$isTelegram = 1) do={\
-    \n        /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/sendM\
-    essage\?chat_id=\$iTGrChatID&text=\$loginMessage\" keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/s\
+    endMessage\" \\\
+    \n                http-method=post \\\
+    \n                http-data=\"chat_id=\$iTGrChatID&text=\$loginMessage\" \
+    \\\
+    \n                keep-result=no;\
+    \n        } on-error={ :log error \"Telegram login notification failed.\";\
+    \_}\
     \n    }\
     \n    :if (\$isDiscord = 1) do={\
-    \n        /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"\
-    content=\" . \"```\$loginMessage```%0A** **\") mode=https keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                http-data=(\"content=\" . \"```\$loginMessage```%0A** **\
+    \") \\\
+    \n                mode=https keep-result=no;\
+    \n        } on-error={ :log error \"Discord login notification failed.\"; \
+    }\
     \n    }\
     \n}\
     \n# --- Update max active users record ---\
@@ -838,8 +861,8 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \";\
     \n}\
     \n\
-    \n:log info \"\$validity\";" on-logout="# ================================\
-    ============================\
+    \n" on-logout="# =========================================================\
+    ===\
     \n# Hotspot Logout Script (Optimized)\
     \n# ============================================================\
     \n\
@@ -893,58 +916,103 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n\
     \n# --- Cause-based Notifications ---\
     \n\
-    \n# Session timeout (FIX: \$timeoutmessage -> \$timeoutMessage in Discord \
-    block)\
+    \n# Session timeout\
     \n:if (\$cause = \"session timeout\") do={\
-    \n    :local timeoutMessage (\"\$user ran out of time!\");\
+    \n    :local timeoutMessage (\"\$user%20ran%20out%20of%20time!\");\
     \n    :if (\$isTelegram = 1) do={\
-    \n        /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/sendM\
-    essage\?chat_id=\$iTGrChatID&text=\$timeoutMessage\" keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/s\
+    endMessage\" \\\
+    \n                http-method=post \\\
+    \n                http-data=\"chat_id=\$iTGrChatID&text=\$timeoutMessage\"\
+    \_\\\
+    \n                keep-result=no;\
+    \n        } on-error={ :log warning \"logout: Telegram session timeout not\
+    ify failed\"; }\
     \n    }\
     \n    :if (\$isDiscord = 1) do={\
-    \n        /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"\
-    content=\" . \"```\$timeoutMessage```%0A** **\") mode=https keep-result=no\
-    ;\
+    \n        :do {\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                http-data=(\"content=\" . \"```\$timeoutMessage```%0A** \
+    **\") \\\
+    \n                mode=https keep-result=no;\
+    \n        } on-error={ :log warning \"logout: Discord session timeout noti\
+    fy failed\"; }\
     \n    }\
     \n}\
     \n\
-    \n# User-requested pause (only when no active purchase in comment)\
+    \n# User-requested pause\
     \n:if (\$com = \"\" && \$cause = \"user request\") do={\
-    \n    :local pauseMessage (\"\$user paused time.\");\
+    \n    :local pauseMessage (\"\$user%20paused%20time.\");\
     \n    :if (\$isTelegram = 1) do={\
-    \n        /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/sendM\
-    essage\?chat_id=\$iTGrChatID&text=\$pauseMessage\" keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/s\
+    endMessage\" \\\
+    \n                http-method=post \\\
+    \n                http-data=\"chat_id=\$iTGrChatID&text=\$pauseMessage\" \
+    \\\
+    \n                keep-result=no;\
+    \n        } on-error={ :log warning \"logout: Telegram pause notify failed\
+    \"; }\
     \n    }\
     \n    :if (\$isDiscord = 1) do={\
-    \n        /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"\
-    content=\" . \"```\$pauseMessage```%0A** **\") mode=https keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                http-data=(\"content=\" . \"```\$pauseMessage```%0A** **\
+    \") \\\
+    \n                mode=https keep-result=no;\
+    \n        } on-error={ :log warning \"logout: Discord pause notify failed\
+    \"; }\
     \n    }\
     \n}\
     \n\
-    \n# Keepalive timeout (auto-pause)\
+    \n# Keepalive timeout\
     \n:if (\$cause = \"keepalive timeout\") do={\
-    \n    :local timeoutMessage (\"automatically paused time for \$user\");\
+    \n    :local timeoutMessage (\"automatically%20paused%20time%20for%20\$use\
+    r\");\
     \n    :if (\$isTelegram = 1) do={\
-    \n        /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/sendM\
-    essage\?chat_id=\$iTGrChatID&text=\$timeoutMessage\" keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/s\
+    endMessage\" \\\
+    \n                http-method=post \\\
+    \n                http-data=\"chat_id=\$iTGrChatID&text=\$timeoutMessage\"\
+    \_\\\
+    \n                keep-result=no;\
+    \n        } on-error={ :log warning \"logout: Telegram keepalive notify fa\
+    iled\"; }\
     \n    }\
     \n    :if (\$isDiscord = 1) do={\
-    \n        /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"\
-    content=\" . \"```\$timeoutMessage```%0A** **\") mode=https keep-result=no\
-    ;\
+    \n        :do {\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                http-data=(\"content=\" . \"```\$timeoutMessage```%0A** \
+    **\") \\\
+    \n                mode=https keep-result=no;\
+    \n        } on-error={ :log warning \"logout: Discord keepalive notify fai\
+    led\"; }\
     \n    }\
     \n}\
     \n\
     \n# Admin kick\
     \n:if (\$cause = \"admin reset\") do={\
-    \n    :local kickMessage (\"admin kicked \$user\");\
+    \n    :local kickMessage (\"admin%20kicked%20\$user\");\
     \n    :if (\$isTelegram = 1) do={\
-    \n        /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/sendM\
-    essage\?chat_id=\$iTGrChatID&text=\$kickMessage\" keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\"https://api.telegram.org/bot\$iTBotToken/s\
+    endMessage\" \\\
+    \n                http-method=post \\\
+    \n                http-data=\"chat_id=\$iTGrChatID&text=\$kickMessage\" \\\
+    \n                keep-result=no;\
+    \n        } on-error={ :log warning \"logout: Telegram admin kick notify f\
+    ailed\"; }\
     \n    }\
     \n    :if (\$isDiscord = 1) do={\
-    \n        /tool fetch url=\$iDiscordWebhook http-method=post http-data=(\"\
-    content=\" . \"```\$kickMessage```%0A** **\") mode=https keep-result=no;\
+    \n        :do {\
+    \n            /tool fetch url=\$iDiscordWebhook http-method=post \\\
+    \n                http-data=(\"content=\" . \"```\$kickMessage```%0A** **\
+    \") \\\
+    \n                mode=https keep-result=no;\
+    \n        } on-error={ :log warning \"logout: Discord admin kick notify fa\
+    iled\"; }\
     \n    }\
     \n}\
     \n\
