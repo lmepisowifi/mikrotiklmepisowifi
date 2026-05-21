@@ -71,7 +71,6 @@
                 :set rv [:pick $rv 0 ([:len $rv]-1)];
             }
             :set disableHtmlUpdate $rv;
-            :log info "$rv"
         }
 
         # Key: changelog (pipe-separated entries, e.g. "- fix one|- fix two")
@@ -108,7 +107,7 @@
     :do { /file remove [find name="hs-options.txt"] } on-error={}
 }
 
-:put ("Options loaded — disablehtmlupdate=" . $disableHtmlUpdate);
+:log info ("Options loaded — disablehtmlupdate=" . $disableHtmlUpdate);
 
 
 # ==========================================
