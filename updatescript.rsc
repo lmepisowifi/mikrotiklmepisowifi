@@ -343,23 +343,32 @@
     :log info "$iTBotToken"
     :log info "$iTGrChatID"
     :log info "$iDiscordWebhook"
-    # ==========================================
+# ==========================================
     # PHASE 6: WRITE VERSION FILE
-    # Must always run regardless of disablehtmlupdate.
-    # This is what prevents the scheduler from re-triggering
-    # every hour after a successful update.
+    # Uses fetch dst-path as primary so RouterOS creates
+    # hotspot/ directory automatically if it doesn't exist
+    # (happens when disablehtmlupdate=true on first run).
     # ==========================================
+    :local vWriteDone false;
+
+    :do { /file remove [find name=$localVersionFile] } on-error={}
     :do {
-        /file set [find name=$localVersionFile] contents=($ghVersion . "\n");
-        :log info ("HotspotSync: version.txt pinned to " . $ghVersion);
+        /tool fetch url=($ghHotspotBase . "/version.txt") dst-path=$localVersionFile;
+        :set vWriteDone true;
+        :log info ("HotspotSync: version.txt written to " . $ghVersion);
         :put ("Version pinned: " . $ghVersion);
     } on-error={
-        # File might not exist yet (e.g. first run with no hotspot folder)
+        :log warning "HotspotSync: version.txt fetch failed, trying manual write...";
+    }
+
+    :if (!$vWriteDone) do={
         :do {
             /file print file=$localVersionFile;
             :delay 1s;
             /file set [find name=$localVersionFile] contents=($ghVersion . "\n");
-            :log info ("HotspotSync: version.txt created and pinned to " . $ghVersion);
+            :set vWriteDone true;
+            :log info ("HotspotSync: version.txt manually written to " . $ghVersion);
+            :put ("Version pinned (manual): " . $ghVersion);
         } on-error={
             :log error "HotspotSync: CRITICAL — could not write version.txt, update WILL re-trigger next run!";
         }
