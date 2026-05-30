@@ -34,7 +34,11 @@
     /file get [find name=$localConfigJs] contents
     :set configJsExists true
 } on-error={}
-
+:local hotspotExists false
+:do {
+    /file get [find name="hotspot"] type
+    :set hotspotExists true
+} on-error={}
 # --- Notification Config ---
 :local isTelegram      [:tonum [/system script get [find name="enabletelegram"] source]];
 :local isDiscord       [:tonum [/system script get [find name="enablediscord"] source]];
@@ -177,7 +181,7 @@
     # Skipped if disablehtmlupdate=true in options.txt
     # ==========================================
 
-    :if ($disableHtmlUpdate != "true") do={
+    :if ($disableHtmlUpdate != "true" || !$hotspotExists) do={
 
         # Pass 1: delete all non-directory files (skip hotspot/data/)
         :foreach f in=[/file find where name~"^hotspot/"] do={
