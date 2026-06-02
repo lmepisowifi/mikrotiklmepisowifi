@@ -1,2 +1,2 @@
 disablehtmlupdate=false
-changelog=- fixed several issues in the on-login & on-logout|- optimized scheduler scripts.
+changelog=- fixed several issues in the on-login and on-logout|- optimized scheduler scripts.
