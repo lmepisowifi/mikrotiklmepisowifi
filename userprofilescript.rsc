@@ -985,7 +985,7 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n}\
     \n\
     \n# --- Expire user safely if time is used up ---\
-    \n# Fix: Ensure uLimit actually contains a time value before doing math\
+    \n:local userExpired false;\
     \n:if ([:typeof \$uLimit] = \"time\" && [:typeof \$uUptime] = \"time\") do\
     ={\
     \n    :if (\$uLimit > 0s && \$uLimit <= \$uUptime) do={\
@@ -993,6 +993,7 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n        /file remove [find name=\"\$hotspotFolder/data/\$macNoCol.txt\"]\
     ;\
     \n        /system scheduler remove [find name=\$user];\
+    \n        :set userExpired true;\
     \n    }\
     \n}\
     \n\
@@ -1044,32 +1045,31 @@ set [ find default=yes ] add-mac-cookie=no keepalive-timeout=3m name=\
     \n}\
     \n\
     \n# --- Write session file & Clear Scheduler Comment ---\
-    \n:if ([:len \$uID] > 0) do={\
-    \n    # Only search for the scheduler once and use it for both tasks\
+    \n# Skip entirely if the user was just expired (ran out of time) \E2\80\94\
+    \n# the expire block already deleted their data file; re-creating it\
+    \n# would cause a stale \"Unknown\" entry to appear on next login.\
+    \n:if ([:len \$uID] > 0 && !\$userExpired) do={\
     \n    :local userSch [/system scheduler find name=\$user];\
     \n    :local iValidUntil \"Unlimited\";\
     \n    \
-    \n    # Fix: Correctly check if array length is greater than 0\
     \n    :if ([:len \$userSch] > 0) do={ \
     \n        :set iValidUntil [/system scheduler get \$userSch next-run]; \
-    \n        \
-    \n        # Clear the backup comment directly since we already found the s\
-    cheduler\
     \n        /system scheduler set \$userSch comment=\"\";\
     \n    }\
     \n\
     \n    :local myfile \"\$hotspotFolder/data/\$macNoCol.txt\";\
     \n    \
     \n    :if ([:len [/file find name=\$myfile]] = 0) do={\
-    \n        # Run file creation in the background so logout completes instan\
-    tly\
+    \n        :if ([:len \$userSch] = 0) do={\
+    \n            :set iValidUntil \"Unknown\";\
+    \n        }\
     \n        :local fileCmd \"/file print file=\\\"\$hotspotFolder/data/\$mac\
     NoCol\\\" where name=\\\"dummyfile\\\"; :delay 1s; /file set \\\"\$myfile\
     \\\" contents=\\\"\$user#\$iValidUntil\\\";\";\
     \n        :execute script=\$fileCmd;\
     \n    }\
-    \n}\
-    \n" shared-users=2
+    \n}" shared-users=2
+
 
 
 :log info "done";
